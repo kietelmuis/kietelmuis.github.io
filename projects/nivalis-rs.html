@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="nivalis - a 2D/3D game engine written in Rust on wgpu" />
+  <title>nivalis - Omar Hopman</title>
+  <script>
+    (function () {
+      try {
+        if (localStorage.getItem('theme') === 'light') {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="../index.html">Omar Hopman</a>
+      <div class="nav-right">
+        <div class="nav-links">
+          <a href="../index.html#projects">Projects</a>
+          <a href="../index.html#timeline">Experience</a>
+          <a href="../index.html#skills">Skills</a>
+          <a href="https://github.com/kietelmuis" target="_blank" rel="noopener">GitHub</a>
+          <a class="contact-link" href="../index.html#contact">Contact</a>
+        </div>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch color theme" aria-pressed="false">
+          <svg class="icon-sun" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <circle cx="10" cy="10" r="3.6" />
+            <path d="M10 1.6v2M10 16.4v2M3.5 3.5l1.4 1.4M15.1 15.1l1.4 1.4M1.6 10h2M16.4 10h2M3.5 16.5l1.4-1.4M15.1 4.9l1.4-1.4" />
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16.5 12.3A7 7 0 0 1 7.7 3.5a7 7 0 1 0 8.8 8.8Z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="pp-head">
+    <div class="wrap">
+      <a class="pp-back" href="../index.html#projects">&larr; All projects</a>
+      <h1 class="pp-title">nivalis</h1>
+      <p class="pp-tagline">
+        A game engine in Rust on top of wgpu. Currently renders 2D - text,
+        sprites, and a debug overlay. Built to learn the graphics stack properly,
+        not to ship anything.
+      </p>
+      <div class="pp-meta">
+        <span class="pill pill-accent">WIP</span>
+        <span class="pill">Rust</span>
+        <span class="pill">wgpu</span>
+        <span class="pill">winit</span>
+        <span class="pill">glyphon</span>
+        <span class="pill">imgui</span>
+        <span class="pill">WGSL</span>
+      </div>
+      <div class="pp-actions">
+        <a class="btn-ghost" href="https://github.com/kietelmuis/nivalis-rs" target="_blank" rel="noopener">View source</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <section class="pp-section">
+      <h2 class="pp-h2">The problem</h2>
+      <p class="pp-body">
+        Most engine tutorials stop at "here's a spinning cube." I wanted to
+        understand the parts nobody demos: how a swapchain is configured, why
+        text needs its own atlas and cache, how resize actually propagates
+        through three different subsystems. So this is an engine I have to
+        take apart, not a game.
+      </p>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">Why these choices</h2>
+      <ul class="why-list">
+        <li><strong>wgpu over raw Vulkan.</strong> Same hardware access, but the API is portable across Vulkan, Metal, and DX12 for free. I still learn the concepts - adapter, device, queue, bind groups - without paying the platform-specific boilerplate.</li>
+        <li><strong>WGSL shaders in separate files.</strong> Loaded with <code>include_str!</code> so they compile as part of the Rust build. A typo in a shader is a compile error, not a blank screen.</li>
+        <li><strong>Polling loop, no vsync.</strong> <code>ControlFlow::Poll</code> plus <code>request_redraw()</code>. Gives me deterministic frame timing to measure against, which matters when the next step is profiling.</li>
+        <li><strong>imgui on wgpu.</strong> A debug overlay is the fastest way to see what state the renderer is actually in. Worth the extra pipeline.</li>
+        <li><strong>glyphon for text.</strong> Proper font shaping and an atlas I don't have to write. I get cached glyphs for free and only learn the atlas problem by reading their source.</li>
+      </ul>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">Surface configuration</h2>
+      <p class="pp-body">
+        Adapter, then device, then the swapchain. The two things worth calling
+        out: <strong>mailbox present mode</strong> for no tearing, and using the
+        same <code>Bgra8UnormSrgb</code> format for both the surface and the
+        glyph atlas so text doesn't need a second format path.
+      </p>
+
+      <div class="snippet">
+        <div class="snippet-bar"><span class="lang">rust</span><span>renderer.rs</span></div>
+<pre><code><span class="tok-key">let mut</span> config = surface
+    .get_default_config(&amp;adapter, size.width, size.height)
+    .unwrap();
+config.format = swapchain_format;   <span class="tok-com">// Bgra8UnormSrgb</span>
+config.present_mode = wgpu::PresentMode::Mailbox;
+
+surface.configure(&amp;device, &amp;config);</code></pre>
+      </div>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">A quad is four vertices</h2>
+      <p class="pp-body">
+        2D sprites are four <code>Vertex</code> structs built from a transform -
+        position plus scale, no index buffer. Keeping it this explicit meant I
+        never had to wonder about winding order or index offsets while I was
+        still learning the pipeline.
+      </p>
+
+      <div class="snippet">
+        <div class="snippet-bar"><span class="lang">rust</span><span>layer.rs</span></div>
+<pre><code><span class="tok-key">pub fn</span> <span class="tok-typ">calculate_vertices</span>(&amp;self) -&gt; [Vertex; 4] {
+    <span class="tok-key">let</span> (x, y, z) = (self.position[0], self.position[1], self.position[2]);
+    <span class="tok-key">let</span> (sx, sy) = (self.scale[0], self.scale[1]);
+
+    [
+        Vertex { position: [x - sx / 2.0, y - sy / 2.0, z], uv: [0.0, 0.0] },
+        Vertex { position: [x + sx / 2.0, y - sy / 2.0, z], uv: [1.0, 0.0] },
+        Vertex { position: [x + sx / 2.0, y + sy / 2.0, z], uv: [1.0, 1.0] },
+        Vertex { position: [x - sx / 2.0, y + sy / 2.0, z], uv: [0.0, 1.0] },
+    ]
+}</code></pre>
+      </div>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">Resize is the real bug farm</h2>
+      <p class="pp-body">
+        A resize isn't one call, it's four: reconfigure the surface, update the
+        text viewport, re-read the scale factor, and re-shape every cached text
+        buffer. Miss the last one and text keeps the old line width. The early
+        return on a zero dimension exists because minimize sends you one, and
+        <code>wgpu</code> panics on a zero-sized surface.
+      </p>
+
+      <div class="snippet">
+        <div class="snippet-bar"><span class="lang">rust</span><span>renderer.rs</span></div>
+<pre><code><span class="tok-key">pub fn</span> <span class="tok-typ">handle_resize</span>(&amp;mut self, size: PhysicalSize&lt;u32&gt;) {
+    <span class="tok-key">if</span> size.height == 0 || size.width == 0 {
+        <span class="tok-key">return</span>; <span class="tok-com">// minimize fires this</span>
+    }
+
+    self.config.width = size.width;
+    self.config.height = size.height;
+    self.surface.configure(&amp;self.device, &amp;self.config);
+    self.window.request_redraw();
+
+    self.text_renderer.viewport.update(&amp;self.queue, glyphon::Resolution {
+        width: self.config.width,
+        height: self.config.height,
+    });
+
+    self.text_renderer.scale_factor = self.window.scale_factor() <span class="tok-key">as</span> f32;
+    self.text_renderer.physical_size = size.cast();
+
+    <span class="tok-key">let</span> logical_width = size.width <span class="tok-key">as</span> f32 / self.text_renderer.scale_factor;
+
+    <span class="tok-key">for</span> (_, b) <span class="tok-key">in</span> self.text_renderer.buffers.iter_mut() {
+        b.set_size(&amp;mut self.text_renderer.font_system, Some(logical_width - 20.0), None);
+        b.shape_until_scroll(&amp;mut self.text_renderer.font_system, false);
+    }
+}</code></pre>
+      </div>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">Where it hurts</h2>
+      <ul class="why-list">
+        <li><strong>No 3D yet.</strong> No camera, no glTF, no mesh loading. That's the whole point of the next phase and the reason it says "3D graphics" on the card rather than "game engine."</li>
+        <li><strong>Colours get randomised at startup</strong> as a leftover test. It's still in <code>Renderer::new</code>.</li>
+        <li><strong>Asset pools are a vector of paths</strong> with index-based handles. Removing an item shifts every id after it. A generation counter or a hash map fixes it.</li>
+        <li><strong>No input handling at all</strong>, so sprite repositioning is blocked until that lands.</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <nav class="wrap pp-next">
+    <a href="../index.html#projects">&larr; All projects</a>
+    <a class="prev" href="winext.html">Next: winext &rarr;</a>
+  </nav>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span class="display">&copy; 2026 Omar Hopman</span>
+      <span>Built with plain HTML and CSS</span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var html = document.documentElement;
+      var toggle = document.getElementById('themeToggle');
+      if (!toggle) return;
+
+      function isLight() {
+        return html.getAttribute('data-theme') === 'light';
+      }
+
+      toggle.setAttribute('aria-pressed', String(isLight()));
+
+      toggle.addEventListener('click', function () {
+        var nextLight = !isLight();
+        if (nextLight) {
+          html.setAttribute('data-theme', 'light');
+        } else {
+          html.removeAttribute('data-theme');
+        }
+        toggle.setAttribute('aria-pressed', String(nextLight));
+        try {
+          localStorage.setItem('theme', nextLight ? 'light' : 'dark');
+        } catch (e) {}
+      });
+    })();
+  </script>
+
+</body>
+</html>

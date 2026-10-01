@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Exhibition - a game launcher integrating BitTorrent and Real-Debrid" />
+  <title>Exhibition - Omar Hopman</title>
+  <script>
+    (function () {
+      try {
+        if (localStorage.getItem('theme') === 'light') {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="../index.html">Omar Hopman</a>
+      <div class="nav-right">
+        <div class="nav-links">
+          <a href="../index.html#projects">Projects</a>
+          <a href="../index.html#timeline">Experience</a>
+          <a href="../index.html#skills">Skills</a>
+          <a href="https://github.com/PhoebeSoftware" target="_blank" rel="noopener">GitHub</a>
+          <a class="contact-link" href="../index.html#contact">Contact</a>
+        </div>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch color theme" aria-pressed="false">
+          <svg class="icon-sun" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <circle cx="10" cy="10" r="3.6" />
+            <path d="M10 1.6v2M10 16.4v2M3.5 3.5l1.4 1.4M15.1 15.1l1.4 1.4M1.6 10h2M16.4 10h2M3.5 16.5l1.4-1.4M15.1 4.9l1.4-1.4" />
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16.5 12.3A7 7 0 0 1 7.7 3.5a7 7 0 1 0 8.8 8.8Z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="pp-head">
+    <div class="wrap">
+      <a class="pp-back" href="../index.html#projects">&larr; All projects</a>
+      <h1 class="pp-title">Exhibition</h1>
+      <p class="pp-tagline">
+        A desktop game launcher that treats two acquisition paths as
+        interchangeable: seed it over BitTorrent, or hand the magnet to
+        Real-Debrid and let someone else's line take the download.
+      </p>
+      <div class="pp-meta">
+        <span class="pill pill-accent">Open source</span>
+        <span class="pill">Go</span>
+        <span class="pill">Wails v3</span>
+        <span class="pill">rain (BitTorrent)</span>
+        <span class="pill">Real-Debrid</span>
+      </div>
+      <div class="pp-actions">
+        <a class="btn-ghost" href="https://github.com/PhoebeSoftware/exhibition-launcher" target="_blank" rel="noopener">View source</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <section class="pp-section">
+      <h2 class="pp-h2">The problem</h2>
+      <p class="pp-body">
+        Every game launcher does the same job: find a title, hand it to a
+        download backend, track progress, launch when it's done. What they don't
+        do is treat backends as swappable. Exhibition takes either a magnet link
+        for a local torrent session or the same magnet for Real-Debrid's
+        unrestricted service, and the rest of the app doesn't care which was
+        used.
+      </p>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">Why these choices</h2>
+      <ul class="why-list">
+        <li><strong>Go.</strong> The work here is concurrency and long-lived network clients, which is exactly where Go's runtime and static binary win. One cross-compiled file per platform, no runtime to install.</li>
+        <li><strong>Wails v3 over Electron.</strong> The frontend is a list of downloads with some settings. A webview is enough; shipping a whole browser per app is not.</li>
+        <li><strong>rain for BitTorrent.</strong> A pure-Go implementation, so the same binary does both backends with no cgo. It exposes DHT, PEX, and port ranges directly, which is what let the settings be user-facing.</li>
+        <li><strong>JSON provider manifests on disk</strong> rather than a compiled-in list. Adding a source is dropping a file into <code>provider/</code>, no rebuild.</li>
+      </ul>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">Normalising before matching</h2>
+      <p class="pp-body">
+        Titles arrive as "Some Game (v1.0.0) [Multi]" from providers and as
+        "some game" from the user. Fuzzy search fails on punctuation and case
+        mismatches, so both sides get the same normalisation pass before
+        comparison.
+      </p>
+
+      <div class="snippet">
+        <div class="snippet-bar"><span class="lang">go</span><span>search/fuzzy.go</span></div>
+<pre><code><span class="tok-key">func</span> (fuzzyManager *FuzzyManager) IndexFuzzy(games <span class="tok-typ">map</span>[<span class="tok-typ">int</span>]json_models.Game) {
+    fuzzyManager.GamesMap = <span class="tok-key">make</span>(<span class="tok-typ">map</span>[<span class="tok-typ">string</span>]<span class="tok-typ">int</span>)
+    <span class="tok-key">for</span> id, game := <span class="tok-key">range</span> games {
+        name := strings.ToLower(game.Name)
+        <span class="tok-com">// Remove weird characters</span>
+        name = strings.Map(<span class="tok-key">func</span>(r <span class="tok-typ">rune</span>) <span class="tok-typ">rune</span> {
+            <span class="tok-key">if</span> strings.ContainsRune(<span class="tok-str">",!?.$#@%^&amp;*()-+=[]/';:&lt;&gt;"</span>, r) {
+                <span class="tok-key">return</span> -<span class="tok-num">1</span>
+            }
+            <span class="tok-key">return</span> r
+        }, name)
+        fuzzyManager.GamesMap[name] = id
+    }
+}</code></pre>
+        <p class="snippet-note">
+          Returning <code>-1</code> from a <code>strings.Map</code> callback
+          deletes the rune. That's the idiomatic Go filter, and it's why no
+          second pass is needed.
+        </p>
+      </div>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">Two downloads, one queue</h2>
+      <p class="pp-body">
+        The queue stores a UUID and a type discriminator. Adding an item means
+        pushing a tagged struct onto a slice; the runner type-switches on it
+        later. Adding a third backend doesn't touch the queue at all.
+      </p>
+
+      <div class="snippet">
+        <div class="snippet-bar"><span class="lang">go</span><span>exhibition_queue/realdebrid.go</span></div>
+<pre><code><span class="tok-key">func</span> (q *Queue) AddRealDebridDownloadToQueue(magnetLink <span class="tok-typ">string</span>) {
+    d := Download{
+        UUID:       uuid.New().String(),
+        Type:       RealDebridType,
+        MagnetLink: magnetLink,
+    }
+    q.AddDownloadToQueue(d)
+}</code></pre>
+      </div>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">Real-Debrid's 503 means "not cached"</h2>
+      <p class="pp-body">
+        <code>/unrestrict/check</code> answers 503 when a host has no cached copy
+        ready. That's not an error condition, it's a routing decision: the link
+        goes to the torrent backend instead. Treating it as a failure would send
+        every uncached download down a dead end.
+      </p>
+
+      <div class="snippet">
+        <div class="snippet-bar"><span class="lang">go</span><span>torrent/realdebrid/unrestrict.go</span></div>
+<pre><code><span class="tok-key">func</span> (client *RealDebridClient) UnrestrictCheck(link <span class="tok-typ">string</span>) (<span class="tok-typ">bool</span>, <span class="tok-typ">error</span>) {
+    params := url.Values{}
+    params.Add(<span class="tok-str">"link"</span>, link)
+
+    req, err := client.newRequest(http.MethodPost, <span class="tok-str">"/unrestrict/check"</span>, <span class="tok-key">nil</span>, params)
+    <span class="tok-key">if</span> err != <span class="tok-key">nil</span> {
+        <span class="tok-key">return</span> <span class="tok-key">false</span>, fmt.Errorf(<span class="tok-str">"could not post link: %w"</span>, err)
+    }
+
+    resp, err := client.client.Do(req)
+    <span class="tok-key">if</span> resp.StatusCode == <span class="tok-num">503</span> {
+        <span class="tok-key">return</span> <span class="tok-key">false</span>, <span class="tok-key">nil</span>
+    }
+
+    <span class="tok-key">return</span> <span class="tok-key">true</span>, <span class="tok-key">nil</span>
+}</code></pre>
+      </div>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">BitTorrent settings are just struct fields</h2>
+      <p class="pp-body">
+        rain exposes DHT, PEX, and the port range directly, so making them
+        user settings took copying them onto the config. <code>ResumeOnStartup</code>
+        is deliberately off: the launcher owns the session lifecycle, and a
+        half-finished torrent resuming behind the user's back is a bug
+        generator.
+      </p>
+
+      <div class="snippet">
+        <div class="snippet-bar"><span class="lang">go</span><span>torrent/torrent.go</span></div>
+<pre><code>conf := torrent.DefaultConfig
+conf.DataDir = path
+conf.DataDirIncludesTorrentID = <span class="tok-key">false</span>
+conf.Debug = <span class="tok-key">false</span>
+
+conf.DHTEnabled = bittorrentSettings.UseDHT
+conf.PEXEnabled = bittorrentSettings.UsePEX
+
+conf.ResumeOnStartup = <span class="tok-key">false</span>
+conf.Database = filepath.Join(path, <span class="tok-str">"bittorrent.db"</span>)
+
+conf.PortBegin = bittorrentSettings.StartPort
+conf.PortEnd = bittorrentSettings.EndPort
+
+session, err := torrent.NewSession(conf)</code></pre>
+      </div>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">Where it hurts</h2>
+      <ul class="why-list">
+        <li><strong>Provider refresh isn't incremental.</strong> Providers are re-verified and reloaded wholesale on startup. With ETags stored in the JSON there's a hint of caching, but no conditional requests are made.</li>
+        <li><strong>Fuzzy search is per-process.</strong> The index is rebuilt from whatever is in memory at startup. No persistence means the first query after a launch is over a partial catalogue.</li>
+        <li><strong>Path handling is duplicated per platform.</strong> <code>disk_unix.go</code> and <code>disk_windows.go</code> carry the same logic in two places, waiting for someone to remember to change both.</li>
+        <li><strong>The proxy client is optional and half-wired.</strong> Present, configurable, and not used on every code path that hits the network.</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <nav class="wrap pp-next">
+    <a href="../index.html#projects">&larr; All projects</a>
+    <a class="prev" href="wsteam.html">Next: wsteam &rarr;</a>
+  </nav>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span class="display">&copy; 2026 Omar Hopman</span>
+      <span>Built with plain HTML and CSS</span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var html = document.documentElement;
+      var toggle = document.getElementById('themeToggle');
+      if (!toggle) return;
+
+      function isLight() {
+        return html.getAttribute('data-theme') === 'light';
+      }
+
+      toggle.setAttribute('aria-pressed', String(isLight()));
+
+      toggle.addEventListener('click', function () {
+        var nextLight = !isLight();
+        if (nextLight) {
+          html.setAttribute('data-theme', 'light');
+        } else {
+          html.removeAttribute('data-theme');
+        }
+        toggle.setAttribute('aria-pressed', String(nextLight));
+        try {
+          localStorage.setItem('theme', nextLight ? 'light' : 'dark');
+        } catch (e) {}
+      });
+    })();
+  </script>
+
+</body>
+</html>

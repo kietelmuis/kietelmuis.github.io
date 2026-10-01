@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="winext - a WinFsp driver exposing ext4 filesystems on Windows" />
+  <title>winext - Omar Hopman</title>
+  <script>
+    (function () {
+      try {
+        if (localStorage.getItem('theme') === 'light') {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="../index.html">Omar Hopman</a>
+      <div class="nav-right">
+        <div class="nav-links">
+          <a href="../index.html#projects">Projects</a>
+          <a href="../index.html#timeline">Experience</a>
+          <a href="../index.html#skills">Skills</a>
+          <a href="https://github.com/kietelmuis" target="_blank" rel="noopener">GitHub</a>
+          <a class="contact-link" href="../index.html#contact">Contact</a>
+        </div>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch color theme" aria-pressed="false">
+          <svg class="icon-sun" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <circle cx="10" cy="10" r="3.6" />
+            <path d="M10 1.6v2M10 16.4v2M3.5 3.5l1.4 1.4M15.1 15.1l1.4 1.4M1.6 10h2M16.4 10h2M3.5 16.5l1.4-1.4M15.1 4.9l1.4-1.4" />
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16.5 12.3A7 7 0 0 1 7.7 3.5a7 7 0 1 0 8.8 8.8Z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="pp-head">
+    <div class="wrap">
+      <a class="pp-back" href="../index.html#projects">&larr; All projects</a>
+      <h1 class="pp-title">winext</h1>
+      <p class="pp-tagline">
+        A WinFsp filesystem driver that mounts an ext4 image as a drive letter
+        on Windows. Around 250 lines so far - it lists directories and reads
+        metadata, and it crashes on more than that.
+      </p>
+      <div class="pp-meta">
+        <span class="pill pill-accent">WIP</span>
+        <span class="pill">Rust</span>
+        <span class="pill">WinFsp</span>
+        <span class="pill">ext4</span>
+        <span class="pill">Windows</span>
+      </div>
+      <div class="pp-actions">
+        <a class="btn-ghost" href="https://github.com/kietelmuis/winext" target="_blank" rel="noopener">View source</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <section class="pp-section">
+      <h2 class="pp-h2">The problem</h2>
+      <p class="pp-body">
+        Windows has no ext4 support and isn't getting any. Linux has
+        <code>ext4-lwext4</code>, a clean userspace ext4 implementation. This sits
+        between them: <strong>WinFsp</strong> on one side, an ext4 filesystem on
+        the other, translating between the two sets of concepts. Anything that
+        speaks normal Windows file APIs gets ext4 for free.
+      </p>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">Why these choices</h2>
+      <ul class="why-list">
+        <li><strong>WinFsp over Dokan.</strong> It ships a real kernel-mode driver instead of needing a filesystem filter driver, so there's no signing or attestation step. Also pure Rust instead of C++.</li>
+        <li><strong>ext4-lwext4 over mounting a VHD.</strong> No admin rights, no disk-part, no loop device. It reads an image file directly in userspace, which makes it easy to test.</li>
+        <li><strong>Rust.</strong> The trait that gets implemented has a dozen methods that must all return Windows error codes. Having the compiler check the signatures removes most of the ways to get this wrong.</li>
+        <li><strong>Image file, not a physical drive.</strong> Deliberately limited. It means the driver can't destroy a real partition, so it can be tested without paranoia.</li>
+      </ul>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">The mount path is six lines</h2>
+      <p class="pp-body">
+        Most of the complexity of this project is hidden inside the two calls
+        that matter. What I wrote by hand is the <code>FileSystemContext</code>
+        impl underneath.
+      </p>
+
+      <div class="snippet">
+        <div class="snippet-bar"><span class="lang">rust</span><span>main.rs</span></div>
+<pre><code><span class="tok-key">let mut</span> host = WinExtFs::new(context, crc32(CRC32_INIT, &amp;data) <span class="tok-key">as</span> u32);
+host.host.mount(<span class="tok-str">"Z:"</span>).unwrap();
+
+host.host.start().unwrap();
+
+loop {}</code></pre>
+        <p class="snippet-note">
+          The serial number is a CRC of the image, so remounting the same image
+          gives Windows a consistent identity. The final <code>loop {}</code> is
+          not a bug - it keeps the process alive because the host has no other
+          reason to hold the thread.
+        </p>
+      </div>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">Windows wants a FILETIME</h2>
+      <p class="pp-body">
+        ext4 hands back Unix timestamps, Windows wants 100-nanosecond intervals
+        since 1601. That offset is the number in the middle, and getting it
+        wrong produces timestamps that land in the wrong century with no error
+        at all.
+      </p>
+
+      <div class="snippet">
+        <div class="snippet-bar"><span class="lang">rust</span><span>system.rs</span></div>
+<pre><code><span class="tok-key">let mut</span> volume_params = VolumeParams::new();
+volume_params.filesystem_name(<span class="tok-str">"ext4"</span>);
+volume_params.volume_creation_time(windows_filetime);
+volume_params.volume_serial_number(serial_number);</code></pre>
+      </div>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">Directory reads are a marker walk</h2>
+      <p class="pp-body">
+        Windows pages through directories using a <em>marker</em>: "give me what
+        comes after this name." The trap is that you iterate the whole
+        directory on every call and <strong>skip until you hit the marker</strong>.
+        Get that wrong and Explorer shows a directory with everything but the
+        first entry.
+      </p>
+
+      <div class="snippet">
+        <div class="snippet-bar"><span class="lang">rust</span><span>system.rs</span></div>
+<pre><code><span class="tok-key">let mut</span> marker_passed = marker.is_none();
+<span class="tok-key">let</span> marker_name = <span class="tok-key">match</span> marker.inner_as_cstr() {
+    Some(m) =&gt; Some(m.to_string_lossy()),
+    None =&gt; None,
+};
+
+<span class="tok-key">for</span> dir <span class="tok-key">in</span> directories {
+    <span class="tok-key">if !</span>marker_passed {
+        <span class="tok-key">if</span> marker_name == Some(name) { marker_passed = <span class="tok-key">true</span>; }
+        <span class="tok-key">continue</span>;
+    }
+
+    <span class="tok-key">let mut</span> dirinfo: DirInfo&lt;255&gt; = DirInfo::new();
+    <span class="tok-key">if</span> dirinfo.set_name(name.clone()).is_err() { <span class="tok-key">continue</span>; }
+
+    dirinfo.append_to_buffer(buffer, &amp;mut bytes_transferred);
+}</code></pre>
+      </div>
+    </section>
+
+    <section class="pp-section">
+      <h2 class="pp-h2">Where it hurts</h2>
+      <ul class="why-list">
+        <li><strong>Reads and writes aren't implemented.</strong> <code>read</code> and <code>write</code> are still empty, so files show up but won't open. That's the "stability issues" on the card.</li>
+        <li><strong>File sizes are hardcoded to zero.</strong> <code>file_size</code> and <code>allocation_size</code> are both set to 0 in <code>get_file_info</code>. Explorer shows every file as empty.</li>
+        <li><strong>Only regular files and directories.</strong> Symlinks, block devices, and FIFOs hit a <code>panic!</code>. Should return a proper error code instead.</li>
+        <li><strong>Security descriptors are fake.</strong> <code>attributes: 0x10</code> with a null descriptor. Nothing enforces permissions yet.</li>
+        <li><strong>Timestamps are "now".</strong> Every entry gets the current time rather than the real mtime from ext4, because the metadata isn't threaded through.</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <nav class="wrap pp-next">
+    <a href="../index.html#projects">&larr; All projects</a>
+    <a class="prev" href="xrooster.html">Next: XRooster &rarr;</a>
+  </nav>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span class="display">&copy; 2026 Omar Hopman</span>
+      <span>Built with plain HTML and CSS</span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var html = document.documentElement;
+      var toggle = document.getElementById('themeToggle');
+      if (!toggle) return;
+
+      function isLight() {
+        return html.getAttribute('data-theme') === 'light';
+      }
+
+      toggle.setAttribute('aria-pressed', String(isLight()));
+
+      toggle.addEventListener('click', function () {
+        var nextLight = !isLight();
+        if (nextLight) {
+          html.setAttribute('data-theme', 'light');
+        } else {
+          html.removeAttribute('data-theme');
+        }
+        toggle.setAttribute('aria-pressed', String(nextLight));
+        try {
+          localStorage.setItem('theme', nextLight ? 'light' : 'dark');
+        } catch (e) {}
+      });
+    })();
+  </script>
+
+</body>
+</html>

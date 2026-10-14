@@ -8,12 +8,14 @@
   <script>
     (function () {
       try {
-        if (localStorage.getItem('theme') === 'light') {
-          document.documentElement.setAttribute('data-theme', 'light');
+        if (localStorage.getItem('theme-v2') === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
         }
       } catch (e) {}
     })();
   </script>
+  <link rel="preload" href="../fonts/Satoshi-Variable.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="../fonts/GeistPixel-Square.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="../style.css" />
 </head>
 <body>
@@ -232,22 +234,22 @@ session, err := torrent.NewSession(conf)</code></pre>
       var toggle = document.getElementById('themeToggle');
       if (!toggle) return;
 
-      function isLight() {
-        return html.getAttribute('data-theme') === 'light';
+      function isDark() {
+        return html.getAttribute('data-theme') === 'dark';
       }
 
-      toggle.setAttribute('aria-pressed', String(isLight()));
+      toggle.setAttribute('aria-pressed', String(isDark()));
 
       toggle.addEventListener('click', function () {
-        var nextLight = !isLight();
-        if (nextLight) {
-          html.setAttribute('data-theme', 'light');
+        var nextDark = !isDark();
+        if (nextDark) {
+          html.setAttribute('data-theme', 'dark');
         } else {
           html.removeAttribute('data-theme');
         }
-        toggle.setAttribute('aria-pressed', String(nextLight));
+        toggle.setAttribute('aria-pressed', String(nextDark));
         try {
-          localStorage.setItem('theme', nextLight ? 'light' : 'dark');
+          localStorage.setItem('theme-v2', nextDark ? 'dark' : 'light');
         } catch (e) {}
       });
     })();

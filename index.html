@@ -3,17 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Omar Hopman - Backend engineer" />
+  <meta name="description" content="Omar Kietelmuis - Systems developer specializing in Rust, C++, Go. Renderers, drivers, schedulers, and developer tooling." />
   <title>Omar Hopman</title>
   <script>
     (function () {
       try {
-        if (localStorage.getItem('theme') === 'light') {
-          document.documentElement.setAttribute('data-theme', 'light');
+        if (localStorage.getItem('theme-v2') === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
         }
       } catch (e) {}
     })();
   </script>
+  <link rel="preload" href="fonts/Satoshi-Variable.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="fonts/GeistPixel-Square.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -43,33 +45,21 @@
   </nav>
 
   <header id="top" class="hero">
-    <div class="hero-scene" id="heroScene">
-      <div class="cube" id="cube">
-        <div class="cube-face face-front"></div>
-        <div class="cube-face face-back"></div>
-        <div class="cube-face face-right"></div>
-        <div class="cube-face face-left"></div>
-        <div class="cube-face face-top"></div>
-        <div class="cube-face face-bottom"></div>
-      </div>
-    </div>
+    <canvas class="hero-wave" id="heroWave" aria-hidden="true"></canvas>
     <div class="hero-grain"></div>
 
     <div class="wrap hero-inner">
       <div class="name-wrap fade-item fade-1">
-        <h1>Omar Hopman</h1>
-        <svg class="underline-svg" viewBox="0 0 640 18" preserveAspectRatio="none">
-          <path d="M4 10 C 120 2, 240 16, 360 8 S 560 2, 636 9" />
-        </svg>
+        <h1><span class="grad-text">Omar Hopman</span></h1>
       </div>
 
-      <p class="role fade-item fade-2">Backend engineer, working in Rust, C#, and Go</p>
+      <p class="role-badge fade-item fade-2">Systems developer &mdash; Rust, C++, and Go</p>
       <p class="lede fade-item fade-3">
         Renderers, filesystem drivers, CLI tools. Low-level work in Rust,
         C#, and Go, mostly on Linux.
       </p>
       <div class="hero-actions fade-item fade-4">
-        <a class="btn-ghost" href="#contact">Get in touch</a>
+        <a class="btn-primary" href="#contact">Get in touch</a>
         <a class="text-link" href="https://github.com/kietelmuis" target="_blank" rel="noopener">View GitHub</a>
       </div>
 
@@ -95,91 +85,104 @@
     </div>
   </header>
 
-  <main class="wrap">
+  <main>
 
     <section id="projects">
-      <h2 class="section-title">Selected work</h2>
+      <span class="chapter-num" aria-hidden="true">01</span>
+      <div class="wrap">
+      <h2 class="section-title">
+        <span class="grad-text">Selected work</span>
+        <svg class="facet-icon facet-cube" id="facetCube" width="30" height="26" viewBox="0 0 60 52">
+          <polygon points="30,48 48,38 48,14 30,24" />
+          <polygon points="30,48 12,38 12,14 30,24" />
+          <polygon points="30,24 48,14 30,4 12,14" />
+        </svg>
+      </h2>
       <p class="section-sub">A mix of finished builds, active projects, and things still taking shape.</p>
 
       <div class="grid">
 
-        <div class="project-card">
+        <a class="project-card" data-tilt href="projects/nivalis-rs.html">
           <div class="project-image"><span class="project-image-mark">N</span></div>
           <div class="project-body">
             <div class="tile-top">
-              <span class="tile-name"><a href="projects/nivalis-rs.html">nivalis</a></span>
-              <a class="tile-repo" href="https://github.com/kietelmuis/nivalis-rs" target="_blank" rel="noopener">Source</a>
+              <span class="tile-name">Nivalis&nbsp;&#8202;rs</span>
+              <span class="tile-status">in progress</span>
             </div>
-            <p class="tile-desc">A GPU renderer built on wgpu, currently only supporting 2D graphics.</p>
-            <p class="tile-stack">Rust</p>
+            <p class="tile-desc">A GPU renderer built on wgpu.</p>
+            <p class="tile-stack">Rust<span class="sep">&middot;</span>wgpu</p>
           </div>
-        </div>
+        </a>
 
-        <div class="project-card">
+        <a class="project-card" data-tilt href="projects/winext.html">
           <div class="project-image"><span class="project-image-mark">W</span></div>
           <div class="project-body">
             <div class="tile-top">
-              <span class="tile-name"><a href="projects/winext.html">winext</a></span>
-              <a class="tile-repo" href="https://github.com/kietelmuis/winext" target="_blank" rel="noopener">Source</a>
+              <span class="tile-name">winext</span>
+              <span class="tile-status">in progress</span>
             </div>
             <p class="tile-desc">A WinFsp driver that exposes ext4 filesystems on Windows.</p>
-            <p class="tile-stack">Rust</p>
+            <p class="tile-stack">Rust<span class="sep">&middot;</span>WinFsp</p>
           </div>
-        </div>
+        </a>
 
-        <div class="project-card">
+        <a class="project-card" data-tilt href="projects/xrooster.html">
           <div class="project-image"><span class="project-image-mark">X</span></div>
           <div class="project-body">
             <div class="tile-top">
-              <span class="tile-name"><a href="projects/xrooster.html">XRooster</a></span>
-              <a class="tile-repo" href="https://github.com/PhoebeSoftware/xrooster" target="_blank" rel="noopener">Source</a>
+              <span class="tile-name">XRooster</span>
+              <span class="tile-status">open source</span>
             </div>
-            <p class="tile-desc">A school schedule app built on the MyX API.</p>
-            <p class="tile-stack">Flutter</p>
+            <p class="tile-desc">A school schedule app built on the Xedule API.</p>
+            <p class="tile-stack">Dart<span class="sep">&middot;</span>Flutter</p>
           </div>
-        </div>
+        </a>
 
-        <div class="project-card">
+        <a class="project-card" data-tilt href="projects/clipper.html">
           <div class="project-image"><span class="project-image-mark">C</span></div>
           <div class="project-body">
             <div class="tile-top">
-              <span class="tile-name"><a href="projects/clipper.html">Clipper</a></span>
-              <a class="tile-repo" href="https://github.com/kietelmuis/clipper" target="_blank" rel="noopener">Source</a>
+              <span class="tile-name">Clipper</span>
+              <span class="tile-status">in progress</span>
             </div>
-            <p class="tile-desc">Realtime gameplay capture that keeps the last 30 seconds in memory.</p>
-            <p class="tile-stack">Rust</p>
+            <p class="tile-desc">Realtime gameplay capture that keeps a rolling last 30 seconds in memory.</p>
+            <p class="tile-stack">Rust<span class="sep">&middot;</span>FFmpeg</p>
           </div>
-        </div>
+        </a>
 
-        <div class="project-card">
+        <a class="project-card" data-tilt href="projects/exhibition.html">
           <div class="project-image"><span class="project-image-mark">E</span></div>
           <div class="project-body">
             <div class="tile-top">
-              <span class="tile-name"><a href="projects/exhibition.html">Exhibition</a></span>
-              <a class="tile-repo" href="https://github.com/PhoebeSoftware/exhibition-launcher" target="_blank" rel="noopener">Source</a>
+              <span class="tile-name">Exhibition</span>
+              <span class="tile-status">open source</span>
             </div>
             <p class="tile-desc">A game launcher integrating BitTorrent and Real-Debrid clients.</p>
             <p class="tile-stack">Go</p>
           </div>
-        </div>
+        </a>
 
-        <div class="project-card">
+        <a class="project-card" data-tilt href="projects/wsteam.html">
           <div class="project-image"><span class="project-image-mark">S</span></div>
           <div class="project-body">
             <div class="tile-top">
-              <span class="tile-name"><a href="projects/wsteam.html">wsteam</a></span>
-              <a class="tile-repo" href="https://github.com/kietelmuis/wsteam" target="_blank" rel="noopener">Source</a>
+              <span class="tile-name">wsteam</span>
+              <span class="tile-status">for learning</span>
             </div>
-            <p class="tile-desc">A CLI Steam manifest downloader with multi-threading in mind.</p>
-            <p class="tile-stack">C#</p>
+            <p class="tile-desc">A CLI Steam manifest downloader, written in C++.</p>
+            <p class="tile-stack">C++</p>
           </div>
-        </div>
+        </a>
 
+      </div>
       </div>
     </section>
 
-    <section id="timeline">
-      <h2 class="section-title">Experience</h2>
+    <!-- Template — replace with real roles, dates, and companies. Duplicate a .timeline-item block to add more. -->
+    <section id="timeline" class="panel">
+      <span class="chapter-num" aria-hidden="true">02</span>
+      <div class="wrap">
+      <h2 class="section-title"><span class="grad-text">Experience</span></h2>
       <p class="section-sub">Three internships; one finished, one ongoing, one that introduced me to backend work.</p>
 
       <div class="timeline">
@@ -210,27 +213,41 @@
           <p class="timeline-desc">Introduced me into TypeScript, worked with async and databases for the first time.</p>
         </div>
       </div>
+      </div>
     </section>
 
     <section id="skills">
-      <h2 class="section-title">Skills</h2>
+      <span class="chapter-num" aria-hidden="true">03</span>
+      <div class="wrap">
+      <h2 class="section-title">
+        <span class="grad-text">Skills</span>
+        <svg class="facet-icon facet-tetra" id="facetTetra" width="26" height="22" viewBox="0 0 60 46">
+          <polygon points="30,6 14,40 46,40" />
+          <polyline points="30,6 30,30" />
+          <polyline points="14,40 30,30" />
+          <polyline points="46,40 30,30" />
+        </svg>
+      </h2>
 
       <div class="skill-group">
         <span class="skill-key">Languages</span>
         <span class="skill-val">Rust, C++, Go, C#, Dart, Luau, TypeScript</span>
       </div>
       <div class="skill-group">
-        <span class="skill-key">Systems and graphics</span>
+        <span class="skill-key">Systems & graphics</span>
         <span class="skill-val">Linux, FFmpeg, wgpu, Vulkan</span>
       </div>
       <div class="skill-group">
         <span class="skill-key">Applications</span>
         <span class="skill-val">Flutter, GTK</span>
       </div>
+      </div>
     </section>
 
-    <section id="contact">
-      <h2 class="section-title">Contact</h2>
+    <section id="contact" class="panel">
+      <span class="chapter-num" aria-hidden="true">04</span>
+      <div class="wrap">
+      <h2 class="section-title"><span class="grad-text">Contact</span></h2>
       <p class="contact-lede">
         I'm open to software systems and tooling roles, contracting, and interesting
         problems. Reach out and I'll get back to you.
@@ -248,14 +265,15 @@
         <span class="contact-key">GitHub</span>
         <span class="contact-val">github.com/kietelmuis</span>
       </a>
+      </div>
     </section>
 
   </main>
 
   <footer class="footer">
     <div class="wrap footer-inner">
-      <span class="display">&copy; 2026 Omar Hopman</span>
-      <span>Built with plain HTML and CSS</span>
+      <span class="display">&copy; 2026 Omar Kietelmuis</span>
+      <span>Built with plain HTML &amp; CSS</span>
     </div>
   </footer>
 
@@ -264,76 +282,26 @@
 
   <script>
     (function () {
-      var scene = document.getElementById('heroScene');
-      var cube = document.getElementById('cube');
-      var hero = document.querySelector('.hero');
-      if (!scene || !cube || !hero) return;
-
-      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
-      var baseX = -18, baseY = 28;
-
-      var mouseTargetX = 0, mouseTargetY = 0, mouseCurrentX = 0, mouseCurrentY = 0;
-
-      if (!isCoarsePointer && !reduceMotion) {
-        hero.addEventListener('mousemove', function (e) {
-          var rect = hero.getBoundingClientRect();
-          var relX = (e.clientX - rect.left) / rect.width - 0.5;
-          var relY = (e.clientY - rect.top) / rect.height - 0.5;
-          mouseTargetX = relX * 14;
-          mouseTargetY = relY * -14;
-        });
-      }
-
-      function tick() {
-        var heroRect = hero.getBoundingClientRect();
-        var scrollProgress = Math.min(Math.max(-heroRect.top / heroRect.height, 0), 1);
-
-        var rotY = baseY;
-        var rotX = baseX;
-
-        if (!reduceMotion) {
-          mouseCurrentX += (mouseTargetX - mouseCurrentX) * 0.05;
-          mouseCurrentY += (mouseTargetY - mouseCurrentY) * 0.05;
-          rotY = baseY + window.scrollY * 0.18 + mouseCurrentX;
-          rotX = baseX + mouseCurrentY;
-        }
-
-        cube.style.transform = 'rotateX(' + rotX.toFixed(2) + 'deg) rotateY(' + rotY.toFixed(2) + 'deg)';
-
-        var sceneScale = 1 + scrollProgress * 0.4;
-        var sceneOpacity = Math.max(0, 1 - scrollProgress * 1.15);
-        scene.style.transform = 'translateY(-52%) scale(' + sceneScale.toFixed(3) + ')';
-        scene.style.opacity = sceneOpacity.toFixed(3);
-
-        requestAnimationFrame(tick);
-      }
-      requestAnimationFrame(tick);
-    })();
-  </script>
-
-  <script>
-    (function () {
       var html = document.documentElement;
       var toggle = document.getElementById('themeToggle');
       if (!toggle) return;
 
-      function isLight() {
-        return html.getAttribute('data-theme') === 'light';
+      function isDark() {
+        return html.getAttribute('data-theme') === 'dark';
       }
 
-      toggle.setAttribute('aria-pressed', String(isLight()));
+      toggle.setAttribute('aria-pressed', String(isDark()));
 
       toggle.addEventListener('click', function () {
-        var nextLight = !isLight();
-        if (nextLight) {
-          html.setAttribute('data-theme', 'light');
+        var nextDark = !isDark();
+        if (nextDark) {
+          html.setAttribute('data-theme', 'dark');
         } else {
           html.removeAttribute('data-theme');
         }
-        toggle.setAttribute('aria-pressed', String(nextLight));
+        toggle.setAttribute('aria-pressed', String(nextDark));
         try {
-          localStorage.setItem('theme', nextLight ? 'light' : 'dark');
+          localStorage.setItem('theme-v2', nextDark ? 'dark' : 'light');
         } catch (e) {}
       });
     })();
@@ -386,6 +354,259 @@
           }
         });
       }
+    })();
+  </script>
+
+  <!-- Facet icons: small isometric wireframes that turn as their section scrolls through view. -->
+  <script>
+    (function () {
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduceMotion || typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+
+      var cube = document.getElementById('facetCube');
+      var tetra = document.getElementById('facetTetra');
+
+      if (cube) {
+        gsap.fromTo(cube, { rotate: -6 }, {
+          rotate: 22,
+          transformOrigin: '50% 50%',
+          ease: 'none',
+          scrollTrigger: { trigger: '#projects', start: 'top 85%', end: 'bottom 40%', scrub: 0.5 }
+        });
+      }
+      if (tetra) {
+        gsap.fromTo(tetra, { rotate: 8 }, {
+          rotate: -20,
+          transformOrigin: '50% 50%',
+          ease: 'none',
+          scrollTrigger: { trigger: '#skills', start: 'top 85%', end: 'bottom 40%', scrub: 0.5 }
+        });
+      }
+    })();
+  </script>
+
+  <!-- Project card tilt: decorative mouse-tracking, spring-lerped, gated to fine pointers. -->
+  <script>
+    (function () {
+      var cards = document.querySelectorAll('[data-tilt]');
+      if (!cards.length) return;
+
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+      if (reduceMotion || !canHover) {
+        cards.forEach(function (c) { c.classList.add('static-card'); });
+        return;
+      }
+
+      cards.forEach(function (card) {
+        var targetX = 0, targetY = 0, curX = 0, curY = 0, pressed = false;
+
+        card.addEventListener('mousemove', function (e) {
+          var rect = card.getBoundingClientRect();
+          var relX = (e.clientX - rect.left) / rect.width - 0.5;
+          var relY = (e.clientY - rect.top) / rect.height - 0.5;
+          targetX = relX * 9;
+          targetY = relY * -9;
+        });
+        card.addEventListener('mouseleave', function () { targetX = 0; targetY = 0; });
+        card.addEventListener('mousedown', function () { pressed = true; });
+        window.addEventListener('mouseup', function () { pressed = false; });
+
+        function tick() {
+          curX += (targetX - curX) * 0.16;
+          curY += (targetY - curY) * 0.16;
+          var atRest = Math.abs(curX) < 0.05 && Math.abs(curY) < 0.05 && !pressed;
+          var scale = pressed ? 0.98 : (atRest ? 1 : 1.015);
+          card.style.transform = 'perspective(700px) rotateX(' + curY.toFixed(2) + 'deg) rotateY(' + curX.toFixed(2) + 'deg) scale(' + scale.toFixed(3) + ')';
+          requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+    })();
+  </script>
+
+  <!-- Scroll reveal: project cards batch-stagger in, skill/contact rows fade in sequentially. -->
+  <script>
+    (function () {
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduceMotion || typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+
+      gsap.registerPlugin(ScrollTrigger);
+
+      var cards = gsap.utils.toArray('.project-card');
+      if (cards.length) {
+        gsap.set(cards, { opacity: 0, y: 22 });
+        ScrollTrigger.batch(cards, {
+          start: 'top 88%',
+          onEnter: function (batch) {
+            gsap.to(batch, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out', stagger: 0.07 });
+          }
+        });
+      }
+
+      gsap.utils.toArray('.skill-group').forEach(function (row, i) {
+        gsap.set(row, { opacity: 0, y: 16 });
+        ScrollTrigger.create({
+          trigger: row,
+          start: 'top 90%',
+          onEnter: function () {
+            gsap.to(row, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out', delay: i * 0.05 });
+          }
+        });
+      });
+
+      gsap.utils.toArray('.contact-row').forEach(function (row, i) {
+        gsap.set(row, { opacity: 0, y: 16 });
+        ScrollTrigger.create({
+          trigger: row,
+          start: 'top 92%',
+          onEnter: function () {
+            gsap.to(row, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out', delay: i * 0.05 });
+          }
+        });
+      });
+    })();
+  </script>
+
+  <!-- Name: split into letters so they can bob like they're floating, and splash on hover. -->
+  <script>
+    (function () {
+      var h1 = document.querySelector('.name-wrap h1');
+      if (!h1) return;
+      var text = h1.textContent.trim();
+      var words = text.split(' ');
+      h1.setAttribute('aria-label', text);
+      h1.textContent = '';
+      var idx = 0;
+      words.forEach(function (word, w) {
+        var wordEl = document.createElement('span');
+        wordEl.className = 'word';
+        wordEl.setAttribute('aria-hidden', 'true');
+        Array.from(word).forEach(function (ch) {
+          var outer = document.createElement('span');
+          outer.className = 'ch';
+          outer.style.setProperty('--i', idx++);
+          var inner = document.createElement('span');
+          inner.className = 'ci';
+          inner.textContent = ch;
+          outer.appendChild(inner);
+          wordEl.appendChild(outer);
+        });
+        h1.appendChild(wordEl);
+        if (w < words.length - 1) h1.appendChild(document.createTextNode(' '));
+      });
+
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      if (reduceMotion || !canHover) return;
+
+      h1.addEventListener('mouseover', function (e) {
+        var ci = e.target.closest ? e.target.closest('.ci') : null;
+        if (!ci || ci.classList.contains('splash')) return;
+        ci.classList.add('splash');
+        ci.addEventListener('animationend', function done() {
+          ci.classList.remove('splash');
+          ci.removeEventListener('animationend', done);
+        });
+      });
+    })();
+  </script>
+
+  <!-- Hero background: a layered silk ribbon, drawn as many thin lines between two drifting curves. -->
+  <script>
+    (function () {
+      var canvas = document.getElementById('heroWave');
+      var hero = document.querySelector('.hero');
+      if (!canvas || !hero) return;
+      var ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var W = 0, H = 0, lines = 112, STEP = 6;
+      var grad = null, rgb = '188,194,228', alphaScale = 1, dark = false;
+      var cen = [], th = [];
+      var visible = true, lastPhase = 0.8;
+
+      function readTheme() {
+        var cs = getComputedStyle(document.documentElement);
+        rgb = cs.getPropertyValue('--wave-rgb').trim().replace(/\s+/g, '') || '188,194,228';
+        alphaScale = parseFloat(cs.getPropertyValue('--wave-alpha')) || 1;
+        dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        buildGradient();
+      }
+
+      function buildGradient() {
+        grad = ctx.createLinearGradient(0, 0, W, 0);
+        grad.addColorStop(0, 'rgba(' + rgb + ',0.8)');
+        grad.addColorStop(0.35, 'rgba(' + rgb + ',1)');
+        grad.addColorStop(0.8, 'rgba(' + rgb + ',0.8)');
+        grad.addColorStop(1, 'rgba(' + rgb + ',0.55)');
+      }
+
+      function resize() {
+        var r = hero.getBoundingClientRect();
+        W = Math.max(1, Math.round(r.width));
+        H = Math.max(1, Math.round(r.height));
+        var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        canvas.width = Math.round(W * dpr);
+        canvas.height = Math.round(H * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        lines = W < 700 ? 70 : 112;
+        buildGradient();
+        draw(lastPhase);
+      }
+
+      function draw(t) {
+        lastPhase = t;
+        ctx.clearRect(0, 0, W, H);
+        ctx.globalCompositeOperation = dark ? 'lighter' : 'source-over';
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1;
+
+        var pts = Math.ceil(W / STEP) + 1;
+        var k, i, nx;
+        for (k = 0; k < pts; k++) {
+          nx = k / (pts - 1);
+          cen[k] = H * (0.46 + 0.24 * nx) + H * 0.08 * Math.sin(nx * 3.1 + t) + H * 0.035 * Math.sin(nx * 7.3 - t * 1.5);
+          th[k] = Math.max(H * 0.025, H * (0.17 + 0.12 * Math.sin(nx * 2.3 + t * 0.8 + 1.2) + 0.05 * Math.sin(nx * 5.7 - t * 1.2)));
+        }
+
+        for (i = 0; i < lines; i++) {
+          var u = i / (lines - 1);
+          var edge = 1 - Math.abs(u - 0.5) * 2;
+          var a = (0.022 + 0.15 * Math.pow(1 - edge, 1.5) + 0.03 * edge) * alphaScale;
+          var glow = i % 5 === 0;
+          ctx.globalAlpha = glow ? a * 0.28 : a;
+          ctx.lineWidth = glow ? 7 : 1;
+          ctx.beginPath();
+          for (k = 0; k < pts; k++) {
+            nx = k / (pts - 1);
+            var fold = 0.5 * Math.sin(nx * 8.5 + u * 6 + t * 1.7) + 0.5 * Math.sin(nx * 4.1 - u * 3 - t * 1.1);
+            var y = cen[k] + (u - 0.5) * th[k] + fold * H * 0.06 * (0.25 + edge);
+            if (k === 0) ctx.moveTo(0, y); else ctx.lineTo(nx * W, y);
+          }
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function frame(now) {
+        if (visible) draw(now * 0.00022 + window.scrollY * 0.0011);
+        requestAnimationFrame(frame);
+      }
+
+      readTheme();
+      resize();
+      window.addEventListener('resize', resize);
+      new MutationObserver(function () { readTheme(); draw(lastPhase); })
+        .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+      if (reduceMotion) return;
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (entries) { visible = entries[0].isIntersecting; }).observe(hero);
+      }
+      requestAnimationFrame(frame);
     })();
   </script>
 

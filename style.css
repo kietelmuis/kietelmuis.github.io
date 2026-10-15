@@ -648,6 +648,43 @@ main > section > .wrap {
     margin-bottom: 0.75rem;
 }
 
+@property --text-reveal-progress {
+    syntax: "<percentage>";
+    inherits: false;
+    initial-value: 0%;
+}
+
+[data-text-reveal] {
+    opacity: 0;
+    transform: translate3d(0, var(--text-reveal-y, 12px), 0);
+}
+
+[data-text-reveal="sweep"] {
+    --text-reveal-progress: 0%;
+    --text-reveal-y: 12px;
+    opacity: 1;
+    -webkit-mask-image: linear-gradient(100deg, #000 calc(var(--text-reveal-progress) - 26%), transparent var(--text-reveal-progress));
+    mask-image: linear-gradient(100deg, #000 calc(var(--text-reveal-progress) - 26%), transparent var(--text-reveal-progress));
+    transition:
+        --text-reveal-progress 1.5s cubic-bezier(0.5, 0.1, 0.2, 1) var(--text-reveal-delay, 0s),
+        transform 1.2s cubic-bezier(0.16, 1, 0.3, 1) var(--text-reveal-delay, 0s);
+}
+
+[data-text-reveal="sweep"].is-revealing {
+    --text-reveal-progress: 126%;
+    transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-text-reveal] {
+        opacity: 1;
+        transform: none;
+        -webkit-mask-image: none;
+        mask-image: none;
+        transition: none;
+    }
+}
+
 .facet-icon {
     flex-shrink: 0;
     overflow: visible;
@@ -892,65 +929,81 @@ main > section > .wrap {
 
 /* TIMELINE */
 .timeline {
+    --rail: 2.6rem;
+    --node: 13px;
+    --track: 2px;
+    --gap: 2.8rem;
+    --line-x: calc(var(--rail) + var(--track) / 2);
     position: relative;
-    padding-left: 2.5rem;
+    margin-top: 0.5rem;
+    padding-left: var(--rail);
 }
 
-.timeline-track {
-    position: absolute;
-    left: 0;
-    top: 0.4rem;
-    bottom: 0.4rem;
-    width: 2px;
-    background: var(--line);
-}
-
-.timeline-progress {
-    position: absolute;
-    left: 0;
-    top: 0.4rem;
-    width: 2px;
-    height: 0;
-    background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--ink) 18%, transparent),
-        var(--ink)
-    );
-    box-shadow: 0 0 12px var(--accent-glow-2);
+.timeline-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
 .timeline-item {
     position: relative;
-    padding-bottom: 3rem;
+    padding: 0 0 var(--gap) 1.6rem;
+}
+
+.timeline-item::before,
+.timeline-item::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: calc(var(--node) / 2);
+    width: var(--track);
+}
+
+.timeline-item::before {
+    bottom: calc(-1 * var(--node) / 2 - 0.5px);
+    z-index: 0;
+    background: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+
+.timeline-item::after {
+    z-index: 1;
+    height: var(--segment-height, 0px);
+    background: color-mix(in srgb, var(--accent) 78%, var(--ink));
 }
 
 .timeline-item:last-child {
     padding-bottom: 0;
 }
 
-.timeline-dot {
-    position: absolute;
-    left: -2.5rem;
-    top: 0.3rem;
-    width: 10px;
-    height: 10px;
-    margin-left: -4px;
-    border-radius: 50%;
-    background: var(--bg);
-    border: 2px solid var(--line);
-    transition:
-        border-color 0.25s ease,
-        background 0.25s ease,
-        transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+.timeline-item:last-child::before {
+    bottom: auto;
+    height: calc(100% - var(--node) / 2);
 }
 
-.timeline-item.is-active .timeline-dot {
-    border-color: transparent;
-    background: var(--gradient);
-    box-shadow:
-        0 0 0 4px var(--accent-glow),
-        0 0 16px 2px var(--accent-glow-2);
-    transform: scale(1.2);
+.timeline-item:last-child::after {
+    height: var(--segment-height, 0px);
+}
+
+.timeline-cursor {
+    position: absolute;
+    left: var(--line-x);
+    top: var(--cursor-y, 0px);
+    z-index: 3;
+    width: var(--node);
+    height: var(--node);
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 2px var(--accent), 0 0 14px var(--accent-glow);
+    transform: translate(-50%, -50%);
+}
+
+.timeline-body {
+    transition: opacity 0.45s ease;
+}
+
+.timeline[data-state="live"] .timeline-item:not(.is-passed) .timeline-body {
+    opacity: 0.78;
 }
 
 .timeline-tag {
@@ -1108,13 +1161,7 @@ main > section > .wrap {
         width: auto;
     }
 
-    .timeline {
-        padding-left: 1.75rem;
-    }
-
-    .timeline-dot {
-        left: -1.75rem;
-    }
+    .timeline { --rail: 2.1rem; --gap: 2.4rem; }
 
     .footer-inner {
         flex-direction: column;

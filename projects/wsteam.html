@@ -5,17 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="wsteam - a cross-platform Steam manifest downloader written in C#" />
   <title>wsteam - Omar Hopman</title>
-  <script>
-    (function () {
-      try {
-        if (localStorage.getItem('theme-v2') === 'dark') {
-          document.documentElement.setAttribute('data-theme', 'dark');
-        }
-      } catch (e) {}
-    })();
-  </script>
   <link rel="preload" href="../fonts/Satoshi-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="../fonts/GeistPixel-Square.woff2" as="font" type="font/woff2" crossorigin />
+  <script src="../theme.js"></script>
   <link rel="stylesheet" href="../style.css" />
 </head>
 <body>
@@ -246,33 +238,6 @@ AnsiConsole.MarkupLine(<span class="tok-str">$"[grey]downloader[/] chunk paralle
       <span>Built with plain HTML and CSS</span>
     </div>
   </footer>
-
-  <script>
-    (function () {
-      var html = document.documentElement;
-      var toggle = document.getElementById('themeToggle');
-      if (!toggle) return;
-
-      function isDark() {
-        return html.getAttribute('data-theme') === 'dark';
-      }
-
-      toggle.setAttribute('aria-pressed', String(isDark()));
-
-      toggle.addEventListener('click', function () {
-        var nextDark = !isDark();
-        if (nextDark) {
-          html.setAttribute('data-theme', 'dark');
-        } else {
-          html.removeAttribute('data-theme');
-        }
-        toggle.setAttribute('aria-pressed', String(nextDark));
-        try {
-          localStorage.setItem('theme-v2', nextDark ? 'dark' : 'light');
-        } catch (e) {}
-      });
-    })();
-  </script>
 
 </body>
 </html>

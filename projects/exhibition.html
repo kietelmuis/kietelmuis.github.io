@@ -8,6 +8,7 @@
   <link rel="preload" href="../fonts/Satoshi-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="../fonts/GeistPixel-Square.woff2" as="font" type="font/woff2" crossorigin />
   <script src="../theme.js"></script>
+  <script src="../language-toggle.js" defer></script>
   <link rel="stylesheet" href="../style.css" />
 </head>
 <body>
@@ -17,13 +18,13 @@
       <a class="brand" href="../index.html">Omar Hopman</a>
       <div class="nav-right">
         <div class="nav-links">
-          <a href="../index.html#projects">Projects</a>
-          <a href="../index.html#timeline">Experience</a>
-          <a href="../index.html#skills">Skills</a>
+          <a href="../index.html#projects" data-i18n="projects">Projects</a>
+          <a href="../index.html#timeline" data-i18n="experience">Experience</a>
+          <a href="../index.html#skills" data-i18n="skills">Skills</a>
           <a href="https://github.com/PhoebeSoftware" target="_blank" rel="noopener">GitHub</a>
-          <a class="contact-link" href="../index.html#contact">Contact</a>
+          <a class="contact-link" href="../index.html#contact" data-i18n="contact">Contact</a>
         </div>
-        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch color theme" aria-pressed="false">
+        <button id="themeToggle" data-i18n-aria="switchTheme" class="theme-toggle" type="button" aria-label="Switch color theme" aria-pressed="false">
           <svg class="icon-sun" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
             <circle cx="10" cy="10" r="3.6" />
             <path d="M10 1.6v2M10 16.4v2M3.5 3.5l1.4 1.4M15.1 15.1l1.4 1.4M1.6 10h2M16.4 10h2M3.5 16.5l1.4-1.4M15.1 4.9l1.4-1.4" />
@@ -53,7 +54,7 @@
         <span class="pill">Real-Debrid</span>
       </div>
       <div class="pp-actions">
-        <a class="btn-ghost" href="https://github.com/PhoebeSoftware/exhibition-launcher" target="_blank" rel="noopener">View source</a>
+        <a class="btn-ghost" data-i18n="viewSource" href="https://github.com/PhoebeSoftware/exhibition-launcher" target="_blank" rel="noopener">View source</a>
       </div>
     </div>
   </header>
@@ -61,7 +62,7 @@
   <main class="wrap">
 
     <section class="pp-section">
-      <h2 class="pp-h2">The problem</h2>
+      <h2 class="pp-h2" data-i18n="problem">The problem</h2>
       <p class="pp-body">
         Every game launcher does the same job: find a title, hand it to a
         download backend, track progress, launch when it's done. What they don't
@@ -73,7 +74,7 @@
     </section>
 
     <section class="pp-section">
-      <h2 class="pp-h2">Why these choices</h2>
+      <h2 class="pp-h2" data-i18n="whyChoices">Why these choices</h2>
       <ul class="why-list">
         <li><strong>Go.</strong> The work here is concurrency and long-lived network clients, which is exactly where Go's runtime and static binary win. One cross-compiled file per platform, no runtime to install.</li>
         <li><strong>Wails v3 over Electron.</strong> The frontend is a list of downloads with some settings. A webview is enough; shipping a whole browser per app is not.</li>
@@ -197,7 +198,7 @@ session, err := torrent.NewSession(conf)</code></pre>
     </section>
 
     <section class="pp-section">
-      <h2 class="pp-h2">Current limitations</h2>
+      <h2 class="pp-h2" data-i18n="limitations">Current limitations</h2>
       <ul class="why-list">
         <li><strong>Provider refresh isn't incremental.</strong> Providers are re-verified and reloaded wholesale on startup. With ETags stored in the JSON there's a hint of caching, but no conditional requests are made.</li>
         <li><strong>Fuzzy search is per-process.</strong> The index is rebuilt from whatever is in memory at startup. No persistence means the first query after a launch is over a partial catalogue.</li>
@@ -209,14 +210,14 @@ session, err := torrent.NewSession(conf)</code></pre>
   </main>
 
   <nav class="wrap pp-next">
-    <a href="../index.html#projects">&larr; All projects</a>
+    <a href="../index.html#projects" data-i18n="allProjects">&larr; All projects</a>
     <a class="prev" href="wsteam.html">Next: wsteam &rarr;</a>
   </nav>
 
   <footer class="footer">
     <div class="wrap footer-inner">
       <span class="display">&copy; 2026 Omar Hopman</span>
-      <span>Built with plain HTML and CSS</span>
+      <span data-i18n="builtWith">Built with plain HTML and CSS</span>
     </div>
   </footer>
 

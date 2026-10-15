@@ -136,6 +136,41 @@ a {
     gap: 1.25rem;
 }
 
+.language-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1rem;
+    height: 34px;
+    padding: 2px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    line-height: 1;
+}
+
+.language-option {
+    min-width: 2rem;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.42rem;
+    border-radius: 999px;
+    text-align: center;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.language-option.is-current {
+    background: var(--bg-alt);
+    color: var(--accent);
+}
+
+
 .theme-toggle {
     display: inline-flex;
     align-items: center;

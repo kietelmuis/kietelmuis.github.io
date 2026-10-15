@@ -322,11 +322,18 @@
 
       var cards = gsap.utils.toArray('.project-card');
       if (cards.length) {
-        gsap.set(cards, { opacity: 0, y: 22 });
+        // --enter-y, not y: the tilt owns the transform composition in CSS.
+        gsap.set(cards, { opacity: 0, '--enter-y': '22px' });
         ScrollTrigger.batch(cards, {
           start: 'top 88%',
           onEnter: function (batch) {
-            gsap.to(batch, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out', stagger: 0.07 });
+            gsap.to(batch, {
+              opacity: 1,
+              '--enter-y': '0px',
+              duration: 0.6,
+              ease: 'power2.out',
+              stagger: 0.07
+            });
           }
         });
       }
@@ -397,6 +404,110 @@
       window.addEventListener('scroll', request, { passive: true });
       window.addEventListener('resize', request);
       update();
+    })();
+  </script>
+
+  <!-- Project card tilt: decorative mouse-tracking, spring-lerped, gated to fine pointers.
+       Writes --tilt-x / --tilt-y / --tilt-s; .project-card composes the transform. -->
+  <script>
+    (function () {
+      var cards = Array.prototype.slice.call(document.querySelectorAll('[data-tilt]'));
+      if (!cards.length) return;
+
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+      if (reduceMotion || !canHover) {
+        cards.forEach(function (c) { c.classList.add('static-card'); });
+        return;
+      }
+
+      var MAX = 9;          // degrees at the card corners
+      var LERP = 0.16;
+      var EPS = 0.05;       // below this we're flat and the loop can idle
+      var running = false;
+
+      var states = cards.map(function (card) {
+        var s = { el: card, tx: 0, ty: 0, cx: 0, cy: 0, scale: 1, pressed: false };
+        card.style.setProperty('--tilt-x', '0deg');
+        card.style.setProperty('--tilt-y', '0deg');
+        card.style.setProperty('--tilt-s', '1');
+
+        card.addEventListener('mousemove', function (e) {
+          var r = card.getBoundingClientRect();
+          s.tx = ((e.clientX - r.left) / r.width - 0.5) * 2 * MAX;
+          s.ty = -((e.clientY - r.top) / r.height - 0.5) * 2 * MAX;
+          wake();
+        });
+
+        card.addEventListener('mouseleave', function () {
+          s.tx = 0;
+          s.ty = 0;
+          s.pressed = false;
+          wake();
+        });
+
+        card.addEventListener('mousedown', function () { s.pressed = true; wake(); });
+
+        // focus-follows, so tabbing reads the same as hovering
+        card.addEventListener('focus', function () { s.tx = 0; s.ty = -MAX * 0.5; wake(); });
+        card.addEventListener('blur', function () { s.tx = 0; s.ty = 0; wake(); });
+
+        return s;
+      });
+
+      // one listener, not one per card
+      window.addEventListener('mouseup', function () {
+        states.forEach(function (s) { s.pressed = false; });
+        wake();
+      });
+
+      function wake() {
+        if (running) return;
+        running = true;
+        requestAnimationFrame(tick);
+      }
+
+      function tick() {
+        var active = false;
+
+        for (var i = 0; i < states.length; i++) {
+          var s = states[i];
+
+          s.cx += (s.tx - s.cx) * LERP;
+          s.cy += (s.ty - s.cy) * LERP;
+
+          if (Math.abs(s.tx - s.cx) < EPS) s.cx = s.tx;
+          if (Math.abs(s.ty - s.cy) < EPS) s.cy = s.ty;
+
+          var settled = s.cx === s.tx && s.cy === s.ty;
+          var wantScale = s.pressed ? 0.98 : 1.015;
+          s.scale += (wantScale - s.scale) * LERP;
+          if (Math.abs(wantScale - s.scale) < 0.001) s.scale = wantScale;
+
+          if (settled && !s.pressed) {
+            // fully at rest: write the flat values once and stop touching it
+            s.el.style.setProperty('--tilt-x', '0deg');
+            s.el.style.setProperty('--tilt-y', '0deg');
+            s.el.style.setProperty('--tilt-s', '1');
+            s.el.classList.remove('is-tilting');
+            continue;
+          }
+
+          active = true;
+          s.el.classList.add('is-tilting');
+          s.el.style.setProperty('--tilt-x', s.cy.toFixed(2) + 'deg');
+          s.el.style.setProperty('--tilt-y', s.cx.toFixed(2) + 'deg');
+          s.el.style.setProperty('--tilt-s', s.scale.toFixed(3));
+        }
+
+        // Keep looping only while something is still moving or held.
+        if (active || states.some(function (s) { return s.pressed; })) {
+          requestAnimationFrame(tick);
+        } else {
+          running = false;
+        }
+      }
     })();
   </script>
 

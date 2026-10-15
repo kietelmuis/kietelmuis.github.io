@@ -583,7 +583,14 @@ section.panel {
     border-radius: 10px;
     background: var(--bg);
     transition: box-shadow 0.25s ease;
-    will-change: transform;
+    /* Tilt writes --tilt-x/y/scale; the reveal animates --enter-y.
+       Keeping the composition here means JS and GSAP never fight over
+       the transform property itself. */
+    transform: perspective(700px)
+        translateY(var(--enter-y, 0px))
+        rotateX(var(--tilt-x, 0deg))
+        rotateY(var(--tilt-y, 0deg))
+        scale(var(--tilt-s, 1));
 }
 
 .project-card::after {
@@ -615,6 +622,11 @@ section.panel {
         0 10px 30px -22px var(--accent-glow-2);
 }
 
+/* Only promote to its own layer while it's actually moving. */
+.project-card.is-tilting {
+    will-change: transform;
+}
+
 /* Fallback when JS tilt is unavailable/disabled (touch, reduced motion): plain CSS press feedback. */
 .project-card.static-card {
     transition:
@@ -623,7 +635,7 @@ section.panel {
 }
 
 .project-card.static-card:active {
-    transform: scale(0.985);
+    transform: perspective(700px) scale(0.985);
 }
 
 .project-image {

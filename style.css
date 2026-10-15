@@ -277,7 +277,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
 .hero-inner {
     position: relative;
     z-index: 1;
-    padding: 7rem 1.75rem;
+    padding: 7rem clamp(1.75rem, 8vw, 7rem);
     width: 100%;
 }
 
@@ -325,7 +325,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
 h1 {
     font-family: var(--font-pixel);
     font-weight: 400;
-    font-size: clamp(2.6rem, 8vw, 6.4rem);
+    font-size: clamp(2.8rem, 8.6vw, 7rem);
     letter-spacing: -0.01em;
     line-height: 1.04;
     position: relative;
@@ -483,6 +483,66 @@ section {
 
 section.panel {
     background: var(--bg-alt);
+}
+
+.chapter-num {
+    position: absolute;
+    z-index: 0;
+    top: 0.25rem;
+    right: 0.25rem;
+    font-family: var(--font-pixel-grid);
+    font-weight: 400;
+    font-size: clamp(5rem, 12vw, 9.5rem);
+    line-height: 1;
+    color: var(--line);
+    user-select: none;
+    pointer-events: none;
+    opacity: 0.6;
+    transform: translateY(0.35rem);
+    transition: color 0.55s ease, opacity 0.55s ease,
+        transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), text-shadow 0.55s ease;
+}
+
+main > section > .wrap {
+    position: relative;
+    z-index: 1;
+}
+
+.chapter-num.is-lit {
+    color: var(--accent);
+    opacity: 1;
+    transform: translateY(0);
+    text-shadow: 0 0 16px var(--accent-glow), 0 0 34px var(--accent-glow-2);
+}
+
+.chapter-num::before {
+    content: "";
+    position: absolute;
+    inset: -14% -38%;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(ellipse closest-side, var(--accent-halo) 0%, var(--accent-halo-soft) 40%, transparent 70%);
+    opacity: 0;
+    transform: scale(0.75);
+    pointer-events: none;
+    transition: opacity 0.7s ease, transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.chapter-num.is-lit::before {
+    opacity: 1;
+    transform: scale(1);
+    animation: chapter-num-pulse 4.5s ease-in-out infinite;
+}
+
+@keyframes chapter-num-pulse {
+    0%, 100% { opacity: 0.85; transform: scale(0.92, 1); }
+    50% { opacity: 1; transform: scale(1.12, 1.05); }
+}
+
+.chapter-num { isolation: isolate; }
+
+@media (prefers-reduced-motion: reduce) {
+    .chapter-num, .chapter-num::before { transition: none; animation: none; transform: none; }
 }
 
 .chapter-nav {

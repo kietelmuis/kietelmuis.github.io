@@ -55,6 +55,8 @@
     --accent-3: #e58ea9;
     --accent-glow: rgba(30, 32, 48, 0.09);
     --accent-glow-2: rgba(30, 32, 48, 0.06);
+    --accent-halo: rgba(106, 95, 209, 0.11);
+    --accent-halo-soft: rgba(106, 95, 209, 0.04);
     --gradient: linear-gradient(120deg, #dcdde2, #a3a6b1 50%, #e4e5e9);
     --wave-rgb: 84, 88, 110;
     --wave-alpha: 0.62;
@@ -74,6 +76,8 @@ html[data-theme="dark"] {
     --accent-3: #eba0b9;
     --accent-glow: rgba(205, 210, 238, 0.1);
     --accent-glow-2: rgba(205, 210, 238, 0.07);
+    --accent-halo: rgba(169, 158, 242, 0.14);
+    --accent-halo-soft: rgba(169, 158, 242, 0.05);
     --gradient: linear-gradient(120deg, #3b3d48, #9a9dad 50%, #3b3d48);
     --wave-rgb: 188, 194, 228;
     --wave-alpha: 1;
@@ -428,6 +432,17 @@ h1 {
         animation: none;
         top: 0;
     }
+
+    .chapter-num {
+        transition: none;
+        transform: none;
+    }
+
+    .chapter-num::before {
+        transition: none;
+        animation: none;
+        transform: none;
+    }
 }
 
 /* SECTIONS */
@@ -454,6 +469,61 @@ section.panel {
     color: var(--line);
     user-select: none;
     pointer-events: none;
+    opacity: 0.6;
+    transform: translateY(0.35rem);
+    transition:
+        color 0.55s ease,
+        opacity 0.55s ease,
+        transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1),
+        text-shadow 0.55s ease;
+}
+
+.chapter-num.is-lit {
+    color: var(--accent);
+    opacity: 1;
+    transform: translateY(0);
+    text-shadow:
+        0 0 16px var(--accent-glow),
+        0 0 34px var(--accent-glow-2);
+}
+
+/* radiating halo behind the lit number */
+.chapter-num::before {
+    content: "";
+    position: absolute;
+    inset: -14% -38%;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(
+        ellipse closest-side,
+        var(--accent-halo) 0%,
+        var(--accent-halo-soft) 40%,
+        transparent 70%
+    );
+    opacity: 0;
+    transform: scale(0.75);
+    pointer-events: none;
+    transition:
+        opacity 0.7s ease,
+        transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.chapter-num.is-lit::before {
+    opacity: 1;
+    transform: scale(1);
+    animation: chapter-num-pulse 4.5s ease-in-out infinite;
+}
+
+@keyframes chapter-num-pulse {
+    0%,
+    100% {
+        opacity: 0.85;
+        transform: scale(0.92, 1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.12, 1.05);
+    }
 }
 
 .section-title {

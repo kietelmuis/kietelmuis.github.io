@@ -282,7 +282,8 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
 
 .name-wrap {
     position: relative;
-    display: inline-block;
+    display: block;
+    width: fit-content;
     margin-bottom: 1.1rem;
 }
 

@@ -311,42 +311,32 @@ h1 {
     font-weight: 300;
     color: var(--muted);
     max-width: 34rem;
-    margin-bottom: 2.75rem;
+    margin-bottom: 0;
 }
 
 .hero-actions {
     display: flex;
     align-items: center;
     gap: 1.75rem;
+    margin-top: 2.75rem;
     margin-bottom: 3rem;
 }
 
-.hero-stats {
+.lede-note {
     display: flex;
-    flex-wrap: wrap;
-    gap: 2.5rem;
-    padding-top: 1.75rem;
-    border-top: 1px solid var(--line);
-    margin-bottom: 3.5rem;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    opacity: 0.75;
 }
 
-.stat {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-}
-
-.stat-label {
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    color: var(--muted);
-}
-
-.stat-value {
-    font-family: var(--font-body);
-    font-weight: 400;
-    font-size: 1rem;
-    color: var(--ink);
+.note-dot {
+    width: 6px;
+    height: 6px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: currentColor;
 }
 
 .btn-primary {

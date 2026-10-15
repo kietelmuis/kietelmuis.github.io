@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Clipper - realtime gameplay capture with a rolling 30 second buffer" />
+  <meta name="description" content="Clipper - a Linux and Windows gameplay capture tool with a short rolling buffer" />
   <title>Clipper - Omar Hopman</title>
   <link rel="preload" href="../fonts/Satoshi-Variable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="../fonts/GeistPixel-Square.woff2" as="font" type="font/woff2" crossorigin />
@@ -41,9 +41,9 @@
       <a class="pp-back" href="../index.html#projects">&larr; All projects</a>
       <h1 class="pp-title">Clipper</h1>
       <p class="pp-tagline">
-        Replays for games the way you actually remember them: the last 30 seconds
-        are always on disk. Press a key, the clip is already written. Built for
-        Linux and Windows.
+        A desktop gameplay capture tool for Linux and Windows. It captures and
+        encodes screen video and audio continuously, with a short rolling buffer
+        intended to make saving recent gameplay quick.
       </p>
       <div class="pp-meta">
         <span class="pill pill-accent">In progress</span>
@@ -63,136 +63,105 @@
     <section class="pp-section">
       <h2 class="pp-h2">The problem</h2>
       <p class="pp-body">
-        Game clippers record continuously and cut the file afterwards. That
-        works for editing, not for reaction content, because the moment you
-        actually want happened thirty seconds ago and the footage exists in a
-        hundred-hour file nobody wants to scrub. This keeps a rolling window of
-        encoded frames in memory and dumps the last N seconds on a keypress.
-        The insight is that the muxing has to happen <em>during</em> capture,
-        not after it.
+        The moment worth saving often happens before you think to press record.
+        Clipper is designed to keep recent gameplay ready: capture and encode
+        video and audio as they arrive, hold the encoded packets in a rolling
+        buffer, then write that recent window to a clip when requested. The
+        current branch gets as far as capture, encoding, and buffering. The F9
+        key sends a clip command, but handling that command is still a
+        <code>todo!</code>; writing the buffered packets to a finished clip
+        remains work to do.
       </p>
     </section>
 
     <section class="pp-section">
       <h2 class="pp-h2">Why these choices</h2>
       <ul class="why-list">
-        <li><strong>Encode during capture, not after.</strong> Keeping raw frames would be simpler and would immediately exhaust memory at 1080p60. Once a frame is an H.264 packet it's tens of kilobytes instead of megabytes, which is what makes a 30 second rolling window fit at all.</li>
-        <li><strong>FFmpeg's libav* bindings, not a wrapper crate.</strong> The crates wrap the C API so well they hide it. Going through <code>ffmpeg-sys</code> directly means owning the <code>AVPacket</code> lifetime, which is exactly the part this project is about.</li>
-        <li><strong>Two capture backends, one interface.</strong> PipeWire on Linux, Windows Graphics Capture on Windows. Same trait, so the muxer never knows which OS it is on.</li>
-        <li><strong>Crossbeam channels over <code>std::mpsc</code>.</strong> Bounded channels with capacity 1 give backpressure for free: if encoding falls behind capture, the producer blocks instead of growing an unbounded queue until the machine dies.</li>
-        <li><strong>One muxer thread owning all FFmpeg state.</strong> Encoders aren't thread-safe. Funnelling both audio and video through a single struct means no locking and no shared mutable state across threads.</li>
+        <li><strong>Encode during capture.</strong> The buffer holds compressed packets rather than raw image frames. That keeps its memory use lower than retaining full-resolution frames, though the current code does not enforce a hard memory limit.</li>
+        <li><strong>Use a time-based window.</strong> The first buffer used a frame-count limit. The implementation moved to timestamps so eviction follows elapsed time rather than assuming a steady frame rate.</li>
+        <li><strong>Use <code>ffmpeg-next</code> for the media pipeline.</strong> The project began with <code>rusty_ffmpeg</code> and direct FFmpeg calls. After repeated work around packet ownership and cleanup, it moved to <code>ffmpeg-next</code> for higher-level Rust types for frames, encoders, and packets. The migration reduced the amount of code written directly against the C API, but did not remove unsafe FFmpeg calls from packet cleanup.</li>
+        <li><strong>Keep capture platform-specific and muxing shared.</strong> Linux and Windows have separate capture modules; both feed buffers to the shared muxer. Linux video capture uses PipeWire, while Windows video capture uses Windows Graphics Capture.</li>
+        <li><strong>Track audio and video time separately.</strong> Video PTS advances per frame; audio PTS advances by samples. They run on different time bases, so the muxer keeps separate counters.</li>
       </ul>
     </section>
 
     <section class="pp-section">
       <h2 class="pp-h2">The rolling buffer</h2>
       <p class="pp-body">
-        This is the whole idea. Every encoded packet goes into a
-        <code>VecDeque</code> tagged with the time it arrived. Adding a frame
-        evicts anything older than the window. On a keypress the muxer writes
-        what's currently in the deque, which is by definition the last 30
-        seconds. 640 bytes to 200 MB and growing, with no seeking.
+        Each encoded packet is stored in a <code>VecDeque</code> with the time
+        it arrived. The target is a 30-second replay window; the current
+        implementation uses a three-second setting while I test the pipeline
+        and work through packet memory use. Both audio and video packets are
+        added to the same queue, with stream indices set during encoding.
       </p>
-
+      <p class="pp-body">This design is intended to avoid seeking through a long recording: the muxer can work with the recent packets already in memory. The current clip-writing path is unfinished, so the branch does not yet demonstrate a complete saved clip.</p>
       <div class="snippet">
-        <div class="snippet-bar"><span class="lang">rust</span><span>src/capture/replay.rs</span></div>
-<pre><code><span class="tok-key">pub fn</span> <span class="tok-typ">add_frame</span>(&amp;mut self, packet: Packet) {
-    <span class="tok-key">let</span> now = Instant::now();
+        <div class="snippet-bar"><span class="lang">rust</span><span>src/capture/muxer.rs</span></div>
+<pre><code><span class="tok-key">fn</span> <span class="tok-typ">encode_video</span>(&amp;<span class="tok-key">mut</span> self, frame: frame::Video) {
+    <span class="tok-key">let</span> video_encoder = self.video_encoder.as_mut().unwrap();
+    video_encoder.send_frame(&amp;frame).unwrap();
 
-    self.bytes = self.bytes.saturating_add(packet.size().max(<span class="tok-num">0</span>) <span class="tok-key">as</span> usize);
-    self.frames.push_back((packet, now));
-
-    <span class="tok-com">// evict memory hungry old frames</span>
-    <span class="tok-key">while let</span> Some((mut oldest_packet, oldest_instant)) = self.frames.pop_front() {
-        <span class="tok-key">if</span> now.duration_since(oldest_instant) &gt; self.duration {
-            <span class="tok-key">unsafe</span> {
-                self.bytes = self
-                    .bytes
-                    .saturating_sub(oldest_packet.size().max(<span class="tok-num">0</span>) <span class="tok-key">as</span> usize);
-
-                <span class="tok-key">let mut</span> packet_ptr: *mut AVPacket = oldest_packet.as_mut_ptr();
-                <span class="tok-key">let</span> raw: *mut *mut AVPacket = &amp;mut packet_ptr <span class="tok-key">as</span> *mut *mut AVPacket;
-
-                sys::av_packet_unref(packet_ptr);
-                sys::av_packet_free(raw);
-            }
-            self.frames.pop_front();
-        } <span class="tok-key">else</span> {
+    <span class="tok-key">loop</span> {
+        <span class="tok-key">let mut</span> packet = packet::Packet::empty();
+        <span class="tok-key">if</span> video_encoder.receive_packet(&amp;<span class="tok-key">mut</span> packet).is_err() {
             <span class="tok-key">break</span>;
         }
+        packet.set_stream(<span class="tok-num">0</span>);
+        self.replay_buffer.add_frame(packet);
     }
+
+    self.video_pts += <span class="tok-num">1</span>;
 }</code></pre>
-        <p class="snippet-note">
-          <code>av_packet_unref</code> frees the packet's buffers, then
-          <code>av_packet_free</code> frees the struct itself. Doing only the
-          first leaks the struct; doing only the second leaks the data. Both,
-          in that order, is the only correct combination.
-        </p>
+        <p class="snippet-note">The encoder and packet use <code>ffmpeg-next</code> wrapper types. Ownership of each received packet moves into the replay buffer.</p>
       </div>
     </section>
 
     <section class="pp-section">
-      <h2 class="pp-h2">Freeing on drop</h2>
+      <h2 class="pp-h2">Working through packet ownership</h2>
       <p class="pp-body">
-        Because <code>AVPacket</code> owns heap memory that the garbage collector
-        knows nothing about, the compiler will not clean it up. <code>Drop</code>
-        drains the queue and frees every packet explicitly. Without this, every
-        clip leaks a few hundred megabytes.
+        The earlier implementation stored raw <code>AVPacket</code> pointers.
+        The history shows several attempts to address memory use and cleanup,
+        including tracking packet sizes, changing how packets are released, and
+        experimenting with a frame pool. Those iterations made resource
+        ownership a recurring part of the project.
       </p>
-
+      <p class="pp-body">The move to <code>ffmpeg-next</code> replaced much of the raw encoder and frame handling with Rust wrapper types. The replay buffer still uses <code>ffmpeg-sys-next</code> to call <code>av_packet_unref</code> and <code>av_packet_free</code>, so that boundary still needs care. A wrapper makes the ordinary path easier to manage; it does not make every interaction with FFmpeg safe automatically.</p>
       <div class="snippet">
         <div class="snippet-bar"><span class="lang">rust</span><span>src/capture/replay.rs</span></div>
-<pre><code><span class="tok-com">// unref and free all packets using drain to take ownership of pointers</span>
-<span class="tok-key">impl</span> <span class="tok-typ">Drop</span> <span class="tok-key">for</span> ReplayBuffer {
-    <span class="tok-key">fn</span> <span class="tok-typ">drop</span>(&amp;mut self) {
-        <span class="tok-key">for</span> (mut packet, _) <span class="tok-key">in</span> self.frames.drain(..) {
+<pre><code><span class="tok-key">impl</span> <span class="tok-typ">Drop</span> <span class="tok-key">for</span> ReplayBuffer {
+    <span class="tok-key">fn</span> <span class="tok-typ">drop</span>(&amp;<span class="tok-key">mut</span> self) {
+        <span class="tok-key">for</span> (<span class="tok-key">mut</span> packet, _) <span class="tok-key">in</span> self.frames.drain(..) {
             <span class="tok-key">unsafe</span> {
-                self.bytes = self.bytes.saturating_sub(packet.size().max(<span class="tok-num">0</span>) <span class="tok-key">as</span> usize);
-
-                <span class="tok-key">let mut</span> raw: *mut ffmpeg_sys_next::AVPacket =
-                    &amp;mut packet <span class="tok-key">as</span> *mut _ <span class="tok-key">as</span> *mut ffmpeg_sys_next::AVPacket;
-
+                <span class="tok-key">let mut</span> raw = &amp;<span class="tok-key">mut</span> packet <span class="tok-key">as</span> *<span class="tok-key">mut</span> _
+                    <span class="tok-key">as</span> *<span class="tok-key">mut</span> ffmpeg_sys_next::AVPacket;
                 sys::av_packet_unref(raw);
-                sys::av_packet_free(&amp;mut raw);
+                sys::av_packet_free(&amp;<span class="tok-key">mut</span> raw);
             }
         }
-        self.frames.clear();
     }
 }</code></pre>
-        <p class="snippet-note">
-          <code>drain(..)</code> rather than <code>iter()</code> because freeing
-          needs an owned handle. That's why <code>av_packet_free</code> takes a
-          <code>*mut *mut</code> - it nulls out the pointer it was given.
-        </p>
+        <p class="snippet-note">This is the current cleanup code. It reaches through the wrapper into the raw packet pointer and calls FFmpeg’s C API directly.</p>
       </div>
     </section>
 
     <section class="pp-section">
-      <h2 class="pp-h2">Backpressure by construction</h2>
+      <h2 class="pp-h2">Current limitations</h2>
       <p class="pp-body">
-        The video channel holds exactly one buffer. When capture outruns
-        encoding, the producer waits instead of queueing. On Linux the audio
-        channel is unbounded, which is a deliberate asymmetry - audio is a
-        fraction of the data and dropping it visibly glitches in a way video
-        doesn't.
+        The current branch exposes several concrete gaps between the intended
+        replay flow and a finished clip.
       </p>
-
-      <div class="snippet">
-        <div class="snippet-bar"><span class="lang">rust</span><span>src/capture/windows/video.rs</span></div>
-<pre><code><span class="tok-com">// capacity 1 = producer blocks when the muxer is behind</span>
-<span class="tok-key">let</span> (video_tx, video_rx) = channel::bounded::&lt;VideoBuffer&gt;(<span class="tok-num">1</span>);</code></pre>
-      </div>
+      <ul class="why-list">
+        <li><strong>Saving a clip is unfinished.</strong> F9 sends a command, but the muxer’s handler is still <code>todo!("rewrite write_clip for safe ffmpeg")</code>. The previous raw-FFmpeg writer is commented out.</li>
+        <li><strong>The current eviction loop needs correction.</strong> It removes the queue’s first packet before checking its age. If that packet is still within the time window, the loop breaks after removing it; if it is old, the code also pops the next queue entry. By inspection, this can discard packets that should remain buffered.</li>
+        <li><strong>The time window is not a memory cap.</strong> The buffer tracks packet bytes, but eviction is based on age. Variable packet sizes mean memory use can vary, and no byte limit is enforced.</li>
+        <li><strong>Capture queues differ by platform.</strong> Windows video capture uses a bounded channel with capacity one; Linux video capture and both audio capture paths use unbounded channels. That means their behavior under a slow encoder is not uniform.</li>
+      </ul>
     </section>
 
     <section class="pp-section">
-      <h2 class="pp-h2">Where it hurts</h2>
-      <ul class="why-list">
-        <li><strong>Audio and video aren't actually muxed yet.</strong> Both are encoded and both are buffered, but writing a valid interleaved output file is the missing piece. That's why the replay buffer is currently 3 seconds in <code>muxer.rs</code>, not 30.</li>
-        <li><strong>The muxer is a god object.</strong> Roughly 400 lines holding both encoders, the scaler, the resampler, and all the PTS bookkeeping. It needs to split.</li>
-        <li><strong>Keypress detection uses <code>rdev</code></strong>, which is global and needs elevated permissions on Linux. A proper hotkey plugin would be less intrusive.</li>
-        <li><strong>Timestamps are tracked manually</strong> as two <code>i64</code> counters. Drift between audio and video is inevitable and there's nothing correcting it.</li>
-        <li><strong>No crash safety.</strong> If the process dies mid-clip, the rolling buffer is gone. There's no way around that without writing continuously, which is the thing this design avoids.</li>
-      </ul>
+      <h2 class="pp-h2">What I’ve learned</h2>
+      <p class="pp-body">The rolling buffer is a small feature sitting on top of several hard problems: capture timing, separate audio and video clocks, packet ownership, and platform-specific input. Moving to <code>ffmpeg-next</code> made the media pipeline more approachable, while the remaining raw cleanup calls show where the C API still matters.</p>
+      <p class="pp-body">The next work is concrete: correct and verify eviction, finish writing buffered packets as a clip, and check the result end to end.</p>
     </section>
 
   </main>
@@ -208,6 +177,11 @@
       <span>Built with plain HTML and CSS</span>
     </div>
   </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
+  <script src="../chapters.js"></script>
 
 </body>
 </html>

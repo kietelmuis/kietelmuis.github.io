@@ -197,7 +197,7 @@ session, err := torrent.NewSession(conf)</code></pre>
     </section>
 
     <section class="pp-section">
-      <h2 class="pp-h2">Where it hurts</h2>
+      <h2 class="pp-h2">Current limitations</h2>
       <ul class="why-list">
         <li><strong>Provider refresh isn't incremental.</strong> Providers are re-verified and reloaded wholesale on startup. With ETags stored in the JSON there's a hint of caching, but no conditional requests are made.</li>
         <li><strong>Fuzzy search is per-process.</strong> The index is rebuilt from whatever is in memory at startup. No persistence means the first query after a launch is over a partial catalogue.</li>
@@ -219,6 +219,11 @@ session, err := torrent.NewSession(conf)</code></pre>
       <span>Built with plain HTML and CSS</span>
     </div>
   </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
+  <script src="../chapters.js"></script>
 
 </body>
 </html>

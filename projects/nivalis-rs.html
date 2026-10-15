@@ -76,9 +76,9 @@
     <section class="pp-section">
       <h2 class="pp-h2">Why these choices</h2>
       <ul class="why-list">
-        <li><strong>wgpu over raw Vulkan.</strong> Same hardware access, but the API is portable across Vulkan, Metal, and DX12 for free. I still learn the concepts - adapter, device, queue, bind groups - without paying the platform-specific boilerplate.</li>
-        <li><strong>WGSL shaders in separate files.</strong> Loaded with <code>include_str!</code> so they compile as part of the Rust build. A typo in a shader is a compile error, not a blank screen.</li>
-        <li><strong>Polling loop, no vsync.</strong> <code>ControlFlow::Poll</code> plus <code>request_redraw()</code>. Gives me deterministic frame timing to measure against, which matters when the next step is profiling.</li>
+        <li><strong>wgpu over raw Vulkan.</strong> It abstracts Vulkan, Metal, and DX12 behind one API, so I can learn the concepts - adapter, device, queue, bind groups - without taking on each backend's boilerplate.</li>
+        <li><strong>WGSL shaders in separate files.</strong> Loaded with <code>include_str!</code> so the source is embedded in the Rust binary at build time. Shader validation happens when the renderer creates its pipeline, not as a Rust compile error.</li>
+        <li><strong>Polling loop, no vsync.</strong> <code>ControlFlow::Poll</code> plus <code>request_redraw()</code> keeps redraws moving without waiting for a vsync event. It makes the loop easier to profile, though frame timing isn't deterministic.</li>
         <li><strong>imgui on wgpu.</strong> A debug overlay is the fastest way to see what state the renderer is actually in. Worth the extra pipeline.</li>
         <li><strong>glyphon for text.</strong> Proper font shaping and an atlas I don't have to write. I get cached glyphs for free and only learn the atlas problem by reading their source.</li>
       </ul>
@@ -88,7 +88,8 @@
       <h2 class="pp-h2">Surface configuration</h2>
       <p class="pp-body">
         Adapter, then device, then the swapchain. The two things worth calling
-        out: <strong>mailbox present mode</strong> for no tearing, and using the
+        out: requesting <strong>mailbox present mode</strong>, which presents
+        without tearing on backends that support it, and using the
         same <code>Bgra8UnormSrgb</code> format for both the surface and the
         glyph atlas so text doesn't need a second format path.
       </p>
@@ -131,13 +132,13 @@ surface.configure(&amp;device, &amp;config);</code></pre>
     </section>
 
     <section class="pp-section">
-      <h2 class="pp-h2">Resize is the real bug farm</h2>
+      <h2 class="pp-h2">Handling window resize</h2>
       <p class="pp-body">
         A resize isn't one call, it's four: reconfigure the surface, update the
         text viewport, re-read the scale factor, and re-shape every cached text
         buffer. Miss the last one and text keeps the old line width. The early
         return on a zero dimension exists because minimize sends you one, and
-        <code>wgpu</code> panics on a zero-sized surface.
+        a zero-sized surface can't be configured.
       </p>
 
       <div class="snippet">
@@ -171,7 +172,7 @@ surface.configure(&amp;device, &amp;config);</code></pre>
     </section>
 
     <section class="pp-section">
-      <h2 class="pp-h2">Where it hurts</h2>
+      <h2 class="pp-h2">Current limitations</h2>
       <ul class="why-list">
         <li><strong>No 3D yet.</strong> No camera, no glTF, no mesh loading. That's the whole point of the next phase and the reason it says "3D graphics" on the card rather than "game engine."</li>
         <li><strong>Colours get randomised at startup</strong> as a leftover test. It's still in <code>Renderer::new</code>.</li>
@@ -193,6 +194,11 @@ surface.configure(&amp;device, &amp;config);</code></pre>
       <span>Built with plain HTML and CSS</span>
     </div>
   </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
+  <script src="../chapters.js"></script>
 
 </body>
 </html>

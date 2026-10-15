@@ -157,7 +157,7 @@ volume_params.volume_serial_number(serial_number);</code></pre>
     </section>
 
     <section class="pp-section">
-      <h2 class="pp-h2">Where it hurts</h2>
+      <h2 class="pp-h2">Current limitations</h2>
       <ul class="why-list">
         <li><strong>Reads and writes aren't implemented.</strong> <code>read</code> and <code>write</code> are still empty, so files show up but won't open. That's the "stability issues" on the card.</li>
         <li><strong>File sizes are hardcoded to zero.</strong> <code>file_size</code> and <code>allocation_size</code> are both set to 0 in <code>get_file_info</code>. Explorer shows every file as empty.</li>
@@ -180,6 +180,11 @@ volume_params.volume_serial_number(serial_number);</code></pre>
       <span>Built with plain HTML and CSS</span>
     </div>
   </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
+  <script src="../chapters.js"></script>
 
 </body>
 </html>

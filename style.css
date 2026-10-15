@@ -87,6 +87,7 @@ html[data-theme="dark"] {
 }
 
 html {
+    font-size: 120%;
     scroll-behavior: smooth;
 }
 
@@ -277,7 +278,9 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
 .hero-inner {
     position: relative;
     z-index: 1;
-    padding: 7rem clamp(1.75rem, 8vw, 7rem);
+    margin-left: clamp(1.25rem, 4vw, 4rem);
+    margin-right: 0;
+    padding: 7rem 0;
     width: 100%;
 }
 
@@ -1141,7 +1144,8 @@ main > section > .wrap {
     }
 
     .hero-inner {
-        padding: 6rem 1.75rem 3.5rem;
+        margin-left: 1.25rem;
+        padding: 6rem 0 3.5rem;
     }
 
     .nav-links a:not(.contact-link) {

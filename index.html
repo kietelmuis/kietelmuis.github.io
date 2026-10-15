@@ -69,7 +69,6 @@
   <main>
 
     <section id="projects">
-      <span class="chapter-num" aria-hidden="true">01</span>
       <div class="wrap">
       <h2 class="section-title">
         <span class="grad-text">Selected work</span>
@@ -126,7 +125,7 @@
               <span class="tile-name">Clipper</span>
               <span class="tile-status">in progress</span>
             </div>
-            <p class="tile-desc">Realtime gameplay capture that keeps a rolling last 30 seconds in memory.</p>
+            <p class="tile-desc">Gameplay capture with a rolling replay buffer, targeting a 30-second window.</p>
             <p class="tile-stack">Rust<span class="sep">&middot;</span>FFmpeg</p>
           </div>
         </a>
@@ -161,7 +160,6 @@
 
     <!-- Template — replace with real roles, dates, and companies. Duplicate a .timeline-item block to add more. -->
     <section id="timeline" class="panel">
-      <span class="chapter-num" aria-hidden="true">02</span>
       <div class="wrap">
       <h2 class="section-title"><span class="grad-text">Experience</span></h2>
       <p class="section-sub">Three internships; one finished, one upcoming, one that introduced me to backend work.</p>
@@ -183,7 +181,7 @@
           <span class="timeline-tag">Aug 2025 - Jan 2026</span>
           <h3 class="timeline-title">Backend Software Intern</h3>
           <p class="timeline-company">VWE Automotive</p>
-          <p class="timeline-desc">Worked on modernizing older .NET Framework micro-services and let newer underworked .NET Core micro-services take up those tasks.</p>
+          <p class="timeline-desc">Worked on moving workloads from older .NET Framework microservices to newer .NET Core services.</p>
         </div>
 
         <div class="timeline-item">
@@ -198,7 +196,6 @@
     </section>
 
     <section id="skills">
-      <span class="chapter-num" aria-hidden="true">03</span>
       <div class="wrap">
       <h2 class="section-title">
         <span class="grad-text">Skills</span>
@@ -226,7 +223,6 @@
     </section>
 
     <section id="contact" class="panel">
-      <span class="chapter-num" aria-hidden="true">04</span>
       <div class="wrap">
       <h2 class="section-title"><span class="grad-text">Contact</span></h2>
       <p class="contact-lede">
@@ -350,60 +346,6 @@
           });
         });
       });
-    })();
-  </script>
-
-  <script>
-    (function () {
-      var nums = Array.prototype.slice.call(document.querySelectorAll('.chapter-num'));
-      if (!nums.length) return;
-
-      var lit = null;
-
-      function update() {
-        var mid = window.innerHeight / 2;
-        var best = null;
-        var bestDist = Infinity;
-
-        for (var i = 0; i < nums.length; i++) {
-          var el = nums[i];
-          var r = el.getBoundingClientRect();
-          // fully outside the viewport vertically
-          if (r.bottom <= 0 || r.top >= window.innerHeight) continue;
-
-          // clamp the element's box to the viewport for a fair center distance
-          var top = Math.max(r.top, 0);
-          var bottom = Math.min(r.bottom, window.innerHeight);
-          var visible = (bottom - top) / Math.max(1, r.height);
-          if (visible <= 0) continue;
-
-          var dist = Math.abs((top + bottom) / 2 - mid) / Math.max(1, window.innerHeight);
-          // prefer the one nearest the viewport center
-          if (dist < bestDist) {
-            bestDist = dist;
-            best = el;
-          }
-        }
-
-        if (best === lit) return;
-        if (lit) lit.classList.remove('is-lit');
-        lit = best;
-        if (lit) lit.classList.add('is-lit');
-      }
-
-      var ticking = false;
-      function request() {
-        if (ticking) return;
-        ticking = true;
-        requestAnimationFrame(function () {
-          ticking = false;
-          update();
-        });
-      }
-
-      window.addEventListener('scroll', request, { passive: true });
-      window.addEventListener('resize', request);
-      update();
     })();
   </script>
 

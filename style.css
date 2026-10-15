@@ -1155,11 +1155,20 @@ main > section > .wrap {
 }
 
 .contact-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
     font-family: var(--font-mono);
     color: var(--muted);
     font-size: 0.8rem;
     width: 6.5rem;
     flex-shrink: 0;
+}
+
+.contact-icon {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 1rem;
 }
 
 .contact-val {

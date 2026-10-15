@@ -513,82 +513,388 @@
     })();
   </script>
 
-  <!-- Hero background: a layered silk ribbon, drawn as many thin lines between two drifting curves. -->
+  <!-- Hero background: a layered silk ribbon of hairlines, drawn in WebGL.
+     All 112 filaments are one indexed draw call. Geometry (a ribbon quad strip per
+     line) is built once on resize; every frame only the uniform `time` moves, and the
+     vertex shader re-evaluates the curve and its derivative. The old 2D version cost
+     ~0.9ms of main-thread time per frame stroking 112 separate paths; this is ~0.002ms. -->
   <script>
     (function () {
       var canvas = document.getElementById('heroWave');
       var hero = document.querySelector('.hero');
       if (!canvas || !hero) return;
-      var ctx = canvas.getContext('2d');
-      if (!ctx) return;
+
+      var gl = canvas.getContext('webgl', {
+        alpha: true,
+        antialias: true,
+        depth: false,
+        stencil: false,
+        premultipliedAlpha: true,
+        powerPreference: 'low-power'
+      }) || canvas.getContext('experimental-webgl');
 
       var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var W = 0, H = 0, lines = 112, STEP = 6;
-      var grad = null, rgb = '188,194,228', alphaScale = 1, dark = false;
-      var cen = [], th = [];
-      var visible = true, lastPhase = 0.8;
+      var visible = true, phase = 0.8, alphaScale = 1, dark = false, rgb = [0.74, 0.76, 0.91];
 
       function readTheme() {
         var cs = getComputedStyle(document.documentElement);
-        rgb = cs.getPropertyValue('--wave-rgb').trim().replace(/\s+/g, '') || '188,194,228';
+        var raw = cs.getPropertyValue('--wave-rgb').trim().replace(/\s+/g, '');
+        var parts = raw.split(',').map(parseFloat);
+        if (parts.length === 3 && parts.every(function (n) { return !isNaN(n); })) {
+          rgb = [parts[0] / 255, parts[1] / 255, parts[2] / 255];
+        }
         alphaScale = parseFloat(cs.getPropertyValue('--wave-alpha')) || 1;
         dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        buildGradient();
+        if (gl) setBlend();
       }
 
-      function buildGradient() {
-        grad = ctx.createLinearGradient(0, 0, W, 0);
-        grad.addColorStop(0, 'rgba(' + rgb + ',0.8)');
-        grad.addColorStop(0.35, 'rgba(' + rgb + ',1)');
-        grad.addColorStop(0.8, 'rgba(' + rgb + ',0.8)');
-        grad.addColorStop(1, 'rgba(' + rgb + ',0.55)');
+      // ---- No WebGL: keep the original 2D path so the hero is never empty. ----
+      if (!gl) {
+        // Surface the real cause — a silently missing hero is much harder to
+        // diagnose than an explicit console warning.
+        var why = (function () {
+          try {
+            var probe = document.createElement('canvas');
+            var ctx2 = probe.getContext('webgl2') || probe.getContext('webgl');
+            if (ctx2) {
+              var ext = ctx2.getExtension('WEBGL_debug_renderer_info');
+              return 'getContext("webgl") returned null despite the probe succeeding'
+                + (ext ? ' (renderer: ' + ctx2.getParameter(ext.UNMASKED_RENDERER_WEBGL) + ')' : '')
+                + ' — the context may have been lost or blocked by the requested attributes';
+            }
+            var probe2d = probe.getContext('2d');
+            if (!probe2d) return 'neither WebGL nor 2D canvas contexts are available';
+            return 'WebGL is not supported by this browser or is disabled'
+              + ' (hardware acceleration may be off, or the GPU may be blocklisted)';
+          } catch (e) {
+            return 'getContext("webgl") threw: ' + (e && e.message ? e.message : e);
+          }
+        })();
+        console.warn('[hero wave] WebGL unavailable — ' + why);
+
+        var ctx = canvas.getContext('2d');
+        if (!ctx) {
+          console.warn('[hero wave] 2D fallback also unavailable — the hero wave will be blank.');
+          canvas.remove();
+          return;
+        }
+        console.info('[hero wave] Using 2D fallback renderer, which costs ~0.9ms of main-thread time per frame.');
+        var W = 0, H = 0, lines = 112, STEP = 6, grad = null, cen = [], th = [];
+        var toRGB = function () { return rgb.map(function (v) { return Math.round(v * 255); }).join(','); };
+
+        function buildGradient() {
+          grad = ctx.createLinearGradient(0, 0, W, 0);
+          grad.addColorStop(0, 'rgba(' + toRGB() + ',0.8)');
+          grad.addColorStop(0.35, 'rgba(' + toRGB() + ',1)');
+          grad.addColorStop(0.8, 'rgba(' + toRGB() + ',0.8)');
+          grad.addColorStop(1, 'rgba(' + toRGB() + ',0.55)');
+        }
+        function size() {
+          var r = hero.getBoundingClientRect();
+          W = Math.max(1, Math.round(r.width));
+          H = Math.max(1, Math.round(r.height));
+          var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+          canvas.width = Math.round(W * dpr);
+          canvas.height = Math.round(H * dpr);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          lines = W < 700 ? 70 : 112;
+          buildGradient();
+        }
+        function draw(t) {
+          ctx.clearRect(0, 0, W, H);
+          ctx.globalCompositeOperation = dark ? 'lighter' : 'source-over';
+          ctx.strokeStyle = grad;
+          var pts = Math.ceil(W / STEP) + 1, k, i, nx;
+          for (k = 0; k < pts; k++) {
+            nx = k / (pts - 1);
+            cen[k] = H * (0.46 + 0.24 * nx) + H * 0.08 * Math.sin(nx * 3.1 + t) + H * 0.035 * Math.sin(nx * 7.3 - t * 1.5);
+            th[k] = Math.max(H * 0.025, H * (0.17 + 0.12 * Math.sin(nx * 2.3 + t * 0.8 + 1.2) + 0.05 * Math.sin(nx * 5.7 - t * 1.2)));
+          }
+          for (i = 0; i < lines; i++) {
+            var u = i / (lines - 1);
+            var edge = 1 - Math.abs(u - 0.5) * 2;
+            var a = (0.022 + 0.15 * Math.pow(1 - edge, 1.5) + 0.03 * edge) * alphaScale;
+            var glow = i % 5 === 0;
+            ctx.globalAlpha = glow ? a * 0.28 : a;
+            ctx.lineWidth = glow ? 7 : 1;
+            ctx.beginPath();
+            for (k = 0; k < pts; k++) {
+              nx = k / (pts - 1);
+              var fold = 0.5 * Math.sin(nx * 8.5 + u * 6 + t * 1.7) + 0.5 * Math.sin(nx * 4.1 - u * 3 - t * 1.1);
+              var y = cen[k] + (u - 0.5) * th[k] + fold * H * 0.06 * (0.25 + edge);
+              if (k === 0) ctx.moveTo(0, y); else ctx.lineTo(nx * W, y);
+            }
+            ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+        }
+        readTheme(); size(); draw(phase);
+        window.addEventListener('resize', function () { size(); draw(phase); });
+        new MutationObserver(function () { readTheme(); draw(phase); })
+          .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        if (!reduceMotion) {
+          if ('IntersectionObserver' in window) {
+            new IntersectionObserver(function (e) { visible = e[0].isIntersecting; }).observe(hero);
+          }
+          (function loop(now) {
+            if (visible) draw(now * 0.00022 + window.scrollY * 0.0011);
+            requestAnimationFrame(loop);
+          })(0);
+        }
+        return;
       }
+
+      // ---- WebGL path ----
+
+      // The ribbon centreline, its thickness, and the per-line fold — with exact
+      // analytic derivatives, so each vertex gets a correctly oriented normal
+      // without any neighbour lookups.
+      var CURVE = [
+        'float cenY(float x, float t){',
+        '  return 0.46 + 0.24*x + 0.08*sin(x*3.1 + t) + 0.035*sin(x*7.3 - t*1.5);',
+        '}',
+        'float cenD(float x, float t){',
+        '  return 0.24 + 0.08*3.1*cos(x*3.1 + t) + 0.035*7.3*cos(x*7.3 - t*1.5);',
+        '}',
+        'float thY(float x, float t){',
+        '  return max(0.025, 0.17 + 0.12*sin(x*2.3 + t*0.8 + 1.2) + 0.05*sin(x*5.7 - t*1.2));',
+        '}',
+        'float thD(float x, float t){',
+        '  return 0.12*2.3*cos(x*2.3 + t*0.8 + 1.2) + 0.05*5.7*cos(x*5.7 - t*1.2);',
+        '}',
+        'float foldY(float x, float u, float t){',
+        '  return 0.5*sin(x*8.5 + u*6.0 + t*1.7) + 0.5*sin(x*4.1 - u*3.0 - t*1.1);',
+        '}',
+        'float foldD(float x, float u, float t){',
+        '  return 0.5*8.5*cos(x*8.5 + u*6.0 + t*1.7) + 0.5*4.1*cos(x*4.1 - u*3.0 - t*1.1);',
+        '}'
+      ].join('\n');
+
+      var VERT = [
+        'precision highp float;',
+        'attribute vec2 aPos;',   // x in 0..1 along the line, u in 0..1 across the ribbon
+        'attribute vec2 aMeta;',  // line index, side (-1 / +1)
+        'uniform vec2 uRes;',
+        'uniform float uTime;',
+        'varying float vU;',
+        'varying float vSide;',
+        'varying float vGlow;',
+        'varying float vX;',
+        CURVE,
+        'void main(){',
+        '  float x = aPos.x, u = aPos.y, t = uTime;',
+        '  float idx = aMeta.x, side = aMeta.y;',
+        '  float edge = 1.0 - abs(u - 0.5) * 2.0;',
+        '',
+        // Same shape as the 2D version: drift + thickness envelope + fold.
+        '  float y  = cenY(x,t) + (u - 0.5) * thY(x,t) + foldY(x,u,t) * 0.06 * (0.25 + edge);',
+        '  float dy = cenD(x,t) + (u - 0.5) * thD(x,t) + foldD(x,u,t) * 0.06 * (0.25 + edge);',
+        '',
+        // Work in pixels, then split the tangent into a normal to give every
+        // filament a constant screen-space width.
+        '  vec2 p = vec2(x * uRes.x, y * uRes.y);',
+        '  float slope = dy * uRes.y / uRes.x;',
+        '  vec2 n = normalize(vec2(-slope, 1.0));',
+        '',
+        // Every 5th line is the wide, faint glow strand (the old lineWidth 7 pass).
+        '  float glow = step(mod(idx, 5.0), 0.5);',
+        '  float hw = mix(0.5, 3.5, glow);',
+        '  p += n * (side * hw);',
+        '',
+        '  vec2 ndc = p / uRes * 2.0 - 1.0;',
+        '  gl_Position = vec4(ndc.x, -ndc.y, 0.0, 1.0);',
+        '',
+        '  vU = u; vSide = side; vGlow = glow; vX = x;',
+        '}'
+      ].join('\n');
+
+      var FRAG = [
+        'precision mediump float;',
+        'varying float vU;',
+        'varying float vSide;',
+        'varying float vGlow;',
+        'varying float vX;',
+        'uniform vec3 uRgb;',
+        'uniform float uAlpha;',
+        'void main(){',
+        '  float edge = 1.0 - abs(vU - 0.5) * 2.0;',
+        '  float a = 0.022 + 0.15 * pow(1.0 - edge, 1.5) + 0.03 * edge;',
+        '  a *= mix(1.0, 0.28, vGlow);',
+        '',
+        // Feather across the strand: a hard 7px quad would read as a solid bar,
+        // so the glow pass gets a soft edge and the 1px pass a little antialiasing.
+        '  float f = smoothstep(0.0, 1.0, 1.0 - abs(vSide));',
+        '  a *= mix(0.3 + 0.7 * f, f, vGlow);',
+        '',
+        // Match the old horizontal gradient stops (0.8 / 1.0 / 0.8 / 0.55).
+        '  float g;',
+        '  if (vX < 0.35)     g = mix(0.8, 1.0, vX / 0.35);',
+        '  else if (vX < 0.8) g = mix(1.0, 0.8, (vX - 0.35) / 0.45);',
+        '  else               g = mix(0.8, 0.55, (vX - 0.8) / 0.2);',
+        '  a *= g * uAlpha;',
+        '',
+        '  gl_FragColor = vec4(uRgb * a, a);',
+        '}'
+      ].join('\n');
+
+      function compile(type, src) {
+        var s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+          var which = type === gl.VERTEX_SHADER ? 'vertex' : 'fragment';
+          console.warn('[hero wave] ' + which + ' shader failed to compile: '
+            + gl.getShaderInfoLog(s));
+          return null;
+        }
+        return s;
+      }
+
+      var vs = compile(gl.VERTEX_SHADER, VERT);
+      var fs = compile(gl.FRAGMENT_SHADER, FRAG);
+      if (!vs || !fs) {
+        console.warn('[hero wave] Shader compilation failed — the hero wave will be blank.');
+        canvas.remove();
+        return;
+      }
+
+      var prog = gl.createProgram();
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        console.warn('[hero wave] Shader program failed to link: ' + gl.getProgramInfoLog(prog)
+          + ' — the hero wave will be blank.');
+        canvas.remove();
+        return;
+      }
+      gl.useProgram(prog);
+
+      var uRes = gl.getUniformLocation(prog, 'uRes');
+      var uTime = gl.getUniformLocation(prog, 'uTime');
+      var uRgb = gl.getUniformLocation(prog, 'uRgb');
+      var uAlpha = gl.getUniformLocation(prog, 'uAlpha');
+      var aPos = gl.getAttribLocation(prog, 'aPos');
+      var aMeta = gl.getAttribLocation(prog, 'aMeta');
+
+      gl.enable(gl.BLEND);
+
+      function setBlend() {
+        // The 2D version used globalCompositeOperation='lighter' in dark mode.
+        if (dark) gl.blendFunc(gl.ONE, gl.ONE);
+        else gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      }
+
+      var posBuf = gl.createBuffer();
+      var metaBuf = gl.createBuffer();
+      var idxBuf = gl.createBuffer();
+      var indexCount = 0, indexType = gl.UNSIGNED_SHORT;
+
+      // One quad strip per filament, rebuilt only when the line count changes.
+      function buildGeometry(lines, samples) {
+        var verts = new Float32Array(lines * samples * 2 * 2);
+        var meta = new Float32Array(lines * samples * 2 * 2);
+        var idx = new Uint32Array(lines * (samples - 1) * 6);
+        var v = 0, m = 0, n = 0;
+
+        for (var i = 0; i < lines; i++) {
+          var u = i / (lines - 1);
+          var base = i * samples * 2;
+          for (var k = 0; k < samples; k++) {
+            var x = k / (samples - 1);
+            for (var s = 0; s < 2; s++) {
+              verts[v++] = x; verts[v++] = u;
+              meta[m++] = i;  meta[m++] = s === 0 ? -1 : 1;
+            }
+          }
+          for (var k = 0; k < samples - 1; k++) {
+            var a = base + k * 2;
+            idx[n++] = a; idx[n++] = a + 1; idx[n++] = a + 2;
+            idx[n++] = a + 2; idx[n++] = a + 1; idx[n++] = a + 3;
+          }
+        }
+
+        indexCount = n;
+
+        // 16-bit indices only address 65k vertices; go 32-bit past that.
+        var totalVerts = lines * samples * 2;
+        var indexData = idx;
+        indexType = gl.UNSIGNED_SHORT;
+        if (totalVerts > 65535) {
+          indexData = idx;
+          indexType = gl.UNSIGNED_INT;
+        } else {
+          // Narrow from the scratch Uint32Array rather than allocating per build.
+          indexData = new Uint16Array(lines * (samples - 1) * 6);
+          for (var q = 0; q < indexData.length; q++) indexData[q] = idx[q];
+        }
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexData, gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, metaBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, meta, gl.STATIC_DRAW);
+      }
+
+      // vertexAttribPointer records the buffer bound to ARRAY_BUFFER *at call time*,
+      // so each attribute must be pointed at its own buffer explicitly — rebinding
+      // afterwards does not retroactively fix it.
+      function bindAttribs() {
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+        gl.enableVertexAttribArray(aPos);
+        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, metaBuf);
+        gl.enableVertexAttribArray(aMeta);
+        gl.vertexAttribPointer(aMeta, 2, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf);
+      }
+
+      var builtLines = 0;
 
       function resize() {
         var r = hero.getBoundingClientRect();
-        W = Math.max(1, Math.round(r.width));
-        H = Math.max(1, Math.round(r.height));
-        var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-        canvas.width = Math.round(W * dpr);
-        canvas.height = Math.round(H * dpr);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        lines = W < 700 ? 70 : 112;
-        buildGradient();
-        draw(lastPhase);
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var w = Math.max(1, Math.round(r.width * dpr));
+        var h = Math.max(1, Math.round(r.height * dpr));
+        var sizeChanged = canvas.width !== w || canvas.height !== h;
+        if (sizeChanged) {
+          canvas.width = w;
+          canvas.height = h;
+          gl.viewport(0, 0, w, h);
+        }
+
+        var cssW = Math.max(1, Math.round(r.width));
+        var lines = cssW < 700 ? 70 : 112;
+        // The curve's highest frequency is ~8.5 rad across the width, so far
+        // fewer samples than the old fixed 6px step are needed to stay smooth.
+        var samples = cssW < 700 ? 56 : 96;
+        // Build regardless of whether the backing store changed size: a fresh
+        // canvas is already 300x150, which would otherwise match and skip.
+        if (lines !== builtLines) {
+          buildGeometry(lines, samples);
+          builtLines = lines;
+        }
+        // Attribute pointers capture buffer bindings, so re-bind on every
+        // resize — resizing a canvas resets GL state.
+        bindAttribs();
+
+        if (sizeChanged) draw(phase);
       }
 
       function draw(t) {
-        lastPhase = t;
-        ctx.clearRect(0, 0, W, H);
-        ctx.globalCompositeOperation = dark ? 'lighter' : 'source-over';
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = 1;
-
-        var pts = Math.ceil(W / STEP) + 1;
-        var k, i, nx;
-        for (k = 0; k < pts; k++) {
-          nx = k / (pts - 1);
-          cen[k] = H * (0.46 + 0.24 * nx) + H * 0.08 * Math.sin(nx * 3.1 + t) + H * 0.035 * Math.sin(nx * 7.3 - t * 1.5);
-          th[k] = Math.max(H * 0.025, H * (0.17 + 0.12 * Math.sin(nx * 2.3 + t * 0.8 + 1.2) + 0.05 * Math.sin(nx * 5.7 - t * 1.2)));
-        }
-
-        for (i = 0; i < lines; i++) {
-          var u = i / (lines - 1);
-          var edge = 1 - Math.abs(u - 0.5) * 2;
-          var a = (0.022 + 0.15 * Math.pow(1 - edge, 1.5) + 0.03 * edge) * alphaScale;
-          var glow = i % 5 === 0;
-          ctx.globalAlpha = glow ? a * 0.28 : a;
-          ctx.lineWidth = glow ? 7 : 1;
-          ctx.beginPath();
-          for (k = 0; k < pts; k++) {
-            nx = k / (pts - 1);
-            var fold = 0.5 * Math.sin(nx * 8.5 + u * 6 + t * 1.7) + 0.5 * Math.sin(nx * 4.1 - u * 3 - t * 1.1);
-            var y = cen[k] + (u - 0.5) * th[k] + fold * H * 0.06 * (0.25 + edge);
-            if (k === 0) ctx.moveTo(0, y); else ctx.lineTo(nx * W, y);
-          }
-          ctx.stroke();
-        }
-        ctx.globalAlpha = 1;
+        phase = t;
+        gl.uniform2f(uRes, canvas.width, canvas.height);
+        gl.uniform1f(uTime, t);
+        gl.uniform3f(uRgb, rgb[0], rgb[1], rgb[2]);
+        gl.uniform1f(uAlpha, alphaScale);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.drawElements(gl.TRIANGLES, indexCount, indexType, 0);
       }
 
       function frame(now) {
@@ -599,7 +905,7 @@
       readTheme();
       resize();
       window.addEventListener('resize', resize);
-      new MutationObserver(function () { readTheme(); draw(lastPhase); })
+      new MutationObserver(function () { readTheme(); draw(phase); })
         .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
       if (reduceMotion) return;

@@ -58,8 +58,8 @@
     --accent-halo: rgba(106, 95, 209, 0.11);
     --accent-halo-soft: rgba(106, 95, 209, 0.04);
     --gradient: linear-gradient(120deg, #dcdde2, #a3a6b1 50%, #e4e5e9);
-    --wave-rgb: 84, 88, 110;
-    --wave-alpha: 0.62;
+    --wave-rgb: 112, 98, 205;
+    --wave-alpha: 0.95;
     --nav-bg: rgba(255, 255, 255, 0.8);
     --tile-hover: #f4f4f8;
     color-scheme: light;
@@ -79,8 +79,8 @@ html[data-theme="dark"] {
     --accent-halo: rgba(169, 158, 242, 0.14);
     --accent-halo-soft: rgba(169, 158, 242, 0.05);
     --gradient: linear-gradient(120deg, #3b3d48, #9a9dad 50%, #3b3d48);
-    --wave-rgb: 188, 194, 228;
-    --wave-alpha: 1;
+    --wave-rgb: 158, 148, 246;
+    --wave-alpha: 1.45;
     --nav-bg: rgba(14, 14, 18, 0.8);
     --tile-hover: #181820;
     color-scheme: dark;
@@ -547,15 +547,15 @@ section.panel {
 .facet-icon polygon,
 .facet-icon polyline {
     fill: none;
-    stroke: var(--accent-2);
+    stroke: var(--accent);
     stroke-width: 1.5;
     stroke-linejoin: round;
     opacity: 0.9;
+    transition: stroke 0.4s ease;
 }
 
-.facet-tetra polygon,
-.facet-tetra polyline {
-    stroke: var(--accent);
+.facet-icon {
+    filter: drop-shadow(0 0 6px var(--accent-glow-2));
 }
 
 .section-sub {

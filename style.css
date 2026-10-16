@@ -603,6 +603,15 @@ main > section > .wrap {
     display: grid;
     gap: 0.4rem;
     transform: translateY(-50%);
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.chapter-nav.is-at-top {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .chapter-nav a {

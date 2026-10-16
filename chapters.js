@@ -116,6 +116,15 @@
 
   var projectTitle = nav.querySelector('.chapter-project-title');
   var projectHeader = document.querySelector('.pp-head');
+  if (projectHeader) {
+    function updateChapterNavVisibility() {
+      nav.classList.toggle('is-at-top', projectHeader.getBoundingClientRect().bottom > 100);
+    }
+    window.addEventListener('scroll', updateChapterNavVisibility, { passive: true });
+    window.addEventListener('resize', updateChapterNavVisibility);
+    updateChapterNavVisibility();
+  }
+
   if (projectTitle && projectHeader) {
     function showProjectTitle(show) {
       if (hasGsap && !reduceMotion) {

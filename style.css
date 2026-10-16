@@ -268,7 +268,6 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
     width: 34px;
     height: 34px;
     object-fit: cover;
-    border: 1px solid var(--line);
     border-radius: 4px;
 }
 

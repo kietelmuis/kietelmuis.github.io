@@ -428,7 +428,9 @@ h1 {
 }
 
 .btn-primary {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
     padding: 0.85rem 1.85rem;
     border-radius: 4px;
     border: 1px solid transparent;
@@ -444,6 +446,12 @@ h1 {
         transform 130ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+.contact-mark {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+}
+
 .btn-primary:hover {
     box-shadow:
         0 10px 28px -16px var(--accent-glow),
@@ -457,6 +465,8 @@ h1 {
 }
 
 .text-link {
+    display: inline-flex;
+    align-items: center;
     font-size: 0.92rem;
     line-height: 1.35;
     align-self: center;
@@ -471,6 +481,17 @@ h1 {
 .text-link:hover {
     color: var(--accent);
     border-bottom-color: var(--accent);
+}
+
+.text-link--icon {
+    padding: 0;
+    justify-content: center;
+    border: 0;
+}
+
+.text-link--icon .github-mark {
+    width: 1.5rem;
+    height: 1.5rem;
 }
 
 .scroll-cue {

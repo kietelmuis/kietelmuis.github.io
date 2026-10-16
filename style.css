@@ -164,11 +164,23 @@ a {
     color: inherit;
     font: inherit;
     cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .language-option.is-current {
     background: var(--bg-alt);
     color: var(--accent);
+    animation: language-switch 0.24s ease-out;
+}
+
+@keyframes language-switch {
+    0% { transform: scale(0.88); }
+    70% { transform: scale(1.06); }
+    100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .language-option.is-current { animation: none; }
 }
 
 
@@ -184,6 +196,7 @@ a {
     color: var(--ink);
     cursor: pointer;
     flex-shrink: 0;
+    position: relative;
     transition:
         border-color 0.2s ease,
         color 0.2s ease,
@@ -281,6 +294,10 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
 }
 
 .nav-links .contact-link {
+    color: var(--muted);
+}
+
+.nav-links .contact-link:hover {
     color: var(--accent);
 }
 

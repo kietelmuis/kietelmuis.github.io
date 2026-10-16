@@ -1389,7 +1389,9 @@ h1 .ci.splash {
 }
 
 .btn-ghost {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
     padding: 0.7rem 1.5rem;
     border: 1px solid var(--line);
     border-radius: 4px;
@@ -1400,6 +1402,13 @@ h1 .ci.splash {
         border-color 0.2s ease,
         color 0.2s ease,
         transform 130ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.github-mark {
+    width: 1.05rem;
+    height: 1.05rem;
+    fill: currentColor;
+    flex: 0 0 auto;
 }
 
 .btn-ghost:hover {

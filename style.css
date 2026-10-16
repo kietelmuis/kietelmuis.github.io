@@ -839,96 +839,6 @@ main > section > .wrap {
     transform: perspective(700px) scale(0.985);
 }
 
-.project-image {
-    position: relative;
-    aspect-ratio: 16 / 10;
-    overflow: hidden;
-    border-radius: 9px 9px 0 0;
-    background: var(--tile-hover);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.project-image::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-        radial-gradient(
-            110% 90% at 0% 0%,
-            color-mix(in srgb, var(--ink) 9%, transparent),
-            transparent 62%
-        ),
-        radial-gradient(
-            100% 110% at 100% 100%,
-            color-mix(in srgb, var(--ink) 8%, transparent),
-            transparent 62%
-        ),
-        repeating-linear-gradient(
-            135deg,
-            var(--line) 0 1px,
-            transparent 1px 12px
-        );
-    transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.project-card:nth-child(3n + 2) .project-image::before {
-    background:
-        radial-gradient(
-            110% 90% at 100% 0%,
-            color-mix(in srgb, var(--ink) 10%, transparent),
-            transparent 62%
-        ),
-        radial-gradient(
-            100% 110% at 0% 100%,
-            color-mix(in srgb, var(--ink) 7%, transparent),
-            transparent 62%
-        ),
-        repeating-linear-gradient(
-            135deg,
-            var(--line) 0 1px,
-            transparent 1px 12px
-        );
-}
-
-.project-card:nth-child(3n) .project-image::before {
-    background:
-        radial-gradient(
-            110% 90% at 50% 0%,
-            color-mix(in srgb, var(--ink) 8%, transparent),
-            transparent 62%
-        ),
-        radial-gradient(
-            100% 110% at 50% 100%,
-            color-mix(in srgb, var(--ink) 8%, transparent),
-            transparent 62%
-        ),
-        repeating-linear-gradient(
-            135deg,
-            var(--line) 0 1px,
-            transparent 1px 12px
-        );
-}
-
-.project-card:hover .project-image::before {
-    transform: scale(1.08);
-}
-
-.project-image-mark {
-    position: relative;
-    font-family: var(--font-pixel-grid);
-    font-weight: 400;
-    font-size: 3.6rem;
-    line-height: 1;
-    color: color-mix(in srgb, var(--ink) 24%, transparent);
-    transition: color 0.25s ease;
-}
-
-.project-card:hover .project-image-mark {
-    color: var(--ink);
-}
-
 .project-body {
     padding: 1.25rem 1.4rem 1.5rem;
     display: flex;
@@ -945,7 +855,7 @@ main > section > .wrap {
 }
 
 .tile-name {
-    font-family: var(--font-body);
+    font-family: var(--font-pixel);
     font-weight: 400;
     letter-spacing: -0.01em;
     font-size: 1.22rem;
@@ -1373,6 +1283,39 @@ h1 .ci.splash {
     background: var(--bg);
 }
 
+.pp-head-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 13rem;
+    align-items: center;
+    gap: 3rem;
+}
+
+.pp-head-copy {
+    min-width: 0;
+}
+
+.pp-head-layout--landscape {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+}
+
+.pp-head-layout--landscape .pp-visual-placeholder--landscape {
+    width: 100%;
+    margin: 0;
+}
+
+@media (max-width: 900px) {
+    .pp-head-layout--landscape {
+        grid-template-columns: 1fr;
+        gap: 2.25rem;
+    }
+
+    .pp-head-layout--landscape .pp-visual-placeholder--landscape {
+        justify-self: end;
+        width: min(100%, 50rem);
+        margin: 0 0 0 auto;
+    }
+}
+
 .pp-back {
     display: inline-block;
     font-family: var(--font-mono);
@@ -1484,17 +1427,124 @@ main.wrap {
 }
 
 .pp-visual-placeholder--landscape {
-    width: 100%;
+    position: relative;
+    width: min(100%, 50rem);
     aspect-ratio: 16 / 9;
+    margin: 1.75rem 0 0 auto;
+    animation: preview-arrive 0.65s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes preview-arrive {
+    from { opacity: 0; transform: translateX(-1rem); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pp-visual-placeholder--landscape,
+    .pp-visual-placeholder--portrait { animation: none; }
+}
+
+.pp-placeholder-image {
+    display: none;
+}
+
+.pp-placeholder-image[src] {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.pp-placeholder-image[src] + span {
+    display: none;
+}
+
+.pp-visual-placeholder.is-clickable {
+    cursor: zoom-in;
+}
+
+.preview-lightbox {
+    position: fixed;
+    inset: 0;
+    display: none;
+    place-items: center;
+    width: 100vw;
+    max-width: none;
+    height: 100vh;
+    max-height: none;
+    margin: 0;
+    padding: clamp(1rem, 4vw, 3rem);
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    opacity: 0;
+    transition: opacity 0.26s ease;
+}
+
+.preview-lightbox[open] {
+    display: grid;
+}
+
+.preview-lightbox::backdrop {
+    background: rgba(14, 14, 18, 0);
+    transition: background-color 0.26s ease;
+}
+
+.preview-lightbox.is-visible {
+    opacity: 1;
+}
+
+.preview-lightbox.is-visible::backdrop {
+    background: rgba(14, 14, 18, 0.82);
+}
+
+.preview-lightbox-image {
+    display: block;
+    max-width: min(92vw, 1100px);
+    max-height: 88vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 1.5rem 5rem rgba(0, 0, 0, 0.35);
+    transform: scale(0.94);
+    transition: transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.preview-lightbox.is-visible .preview-lightbox-image {
+    transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .preview-lightbox,
+    .preview-lightbox::backdrop,
+    .preview-lightbox-image {
+        transition: none;
+    }
 }
 
 .pp-visual-placeholder--portrait {
-    width: min(100%, 16rem);
-    aspect-ratio: 9 / 19;
+    position: relative;
+    display: block;
+    width: min(100%, 13rem);
+    margin: 0;
+    justify-self: end;
+    padding: 0.3rem;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    background: linear-gradient(155deg, var(--bg-alt), var(--bg));
+    box-shadow: inset 0 0 0 5px var(--bg-alt), 0 12px 36px var(--accent-glow);
+    animation: preview-arrive 0.65s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.pp-visual-placeholder + .pp-section {
-    padding-top: 1rem;
+.pp-visual-placeholder--portrait img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 0.7rem;
 }
 
 .pp-section {
@@ -1657,6 +1707,15 @@ code {
 
     .pp-section {
         padding: 2.5rem 0;
+    }
+
+    .pp-head-layout {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .pp-visual-placeholder--portrait {
+        justify-self: center;
     }
 
     .pp-next {

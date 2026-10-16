@@ -1471,6 +1471,32 @@ main.wrap {
     padding: 0 1.75rem;
 }
 
+.pp-visual-placeholder {
+    display: grid;
+    place-items: center;
+    margin: 2.5rem auto 0;
+    border: 1px dashed var(--line);
+    background: var(--bg-alt);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.pp-visual-placeholder--landscape {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+}
+
+.pp-visual-placeholder--portrait {
+    width: min(100%, 16rem);
+    aspect-ratio: 9 / 19;
+}
+
+.pp-visual-placeholder + .pp-section {
+    padding-top: 1rem;
+}
+
 .pp-section {
     padding: 3.25rem 0;
     border-bottom: 1px solid var(--line);

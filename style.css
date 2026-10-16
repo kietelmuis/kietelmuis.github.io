@@ -1298,6 +1298,10 @@ h1 .ci.splash {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
 }
 
+.pp-head-layout--text {
+    grid-template-columns: 1fr;
+}
+
 .pp-head-layout--landscape .pp-visual-placeholder--landscape {
     width: 100%;
     margin: 0;

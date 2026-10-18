@@ -1,0 +1,115 @@
+# Build the site, refresh the GitHub contribution snapshot, deploy to Pages.
+#
+# The snapshot is generated here rather than committed. It needs a token, it
+# changes whenever Omar commits, and a committed copy is a placeholder waiting to
+# reach production -- none of which a static branch can express. So the file is a
+# build artifact: generated on every run, never checked in (see .gitignore), and
+# always present in the published site.
+#
+# This means the site deploys from Actions, not from the branch. One-time
+# repository setting:
+#
+#   Settings -> Pages -> Build and deployment -> Source: GitHub Actions
+#
+# Until that is switched the deploy job fails with "Get Pages site failed" and
+# nothing is published. It is the only manual step.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # 04:17 UTC. Off the hour deliberately: GitHub queues scheduled runs in
+    # bursts and drops them when the queue is busy, which is exactly what the
+    # top of the hour is.
+    - cron: '17 4 * * *'
+  # So the pipeline can be run without waiting for the schedule or pushing.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Queue rather than cancel: a scheduled refresh landing on top of a push deploy
+# would otherwise cancel it halfway and publish nothing.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Seed the workspace with the previous run's snapshot, so a day when the
+      # API is unreachable leaves yesterday's data on the site instead of
+      # removing the grid. A fresh entry is written on every run and
+      # restore-keys picks the most recent one; the cache evicts entries that
+      # nothing has read for a week, which the daily schedule keeps ahead of.
+      - name: Restore the previous snapshot
+        uses: actions/cache@v4
+        with:
+          path: activity.json
+          key: activity-${{ github.run_id }}
+          restore-keys: activity-
+
+      - name: Refresh the contribution snapshot
+        id: refresh
+        continue-on-error: true
+        env:
+          # A classic token with `read:user`, or a fine-grained one with read
+          # access to the profile. The contributions calendar is public data, so
+          # the cheapest scope that works is the right one. The default
+          # GITHUB_TOKEN is an installation token and generally cannot answer a
+          # user query, so it is only a fallback for setups where it can.
+          GITHUB_TOKEN: ${{ secrets.ACTIVITY_TOKEN || secrets.GITHUB_TOKEN }}
+        run: ./scripts/refresh-activity.sh
+
+      - name: Warn when the snapshot could not be refreshed
+        if: steps.refresh.outcome == 'failure'
+        run: |
+          echo "::warning title=Contribution snapshot not refreshed::scripts/refresh-activity.sh failed. Deploying with the previous snapshot if one was cached. Check that the ACTIVITY_TOKEN secret is set and has not expired."
+
+      # The claim this whole pipeline exists to make good on: the live site never
+      # shows invented contribution counts. A placeholder that reaches this point
+      # fails the build instead of being published and looking real.
+      - name: Reject placeholder data
+        run: |
+          if [ ! -s activity.json ]; then
+            echo "No snapshot available. The About grid removes itself; the page is otherwise unaffected."
+            exit 0
+          fi
+          if [ "$(jq -r '.placeholder // false' activity.json)" = "true" ]; then
+            echo "::error title=Placeholder snapshot::activity.json carries placeholder: true. Refusing to publish invented contribution counts."
+            exit 1
+          fi
+          jq -r '"Snapshot: \(.total) contributions across \(.days | length) days (\(.login), \(.year))"' activity.json
+
+      # Published set is staged explicitly rather than handing the whole checkout
+      # to the uploader. This is now the definitive list of what ships, so the
+      # things that only exist for working on the site stay out of it: scripts/
+      # and .github/ are pipeline machinery, AGENTS.md is guidance for the coding
+      # agent, .gitignore is redundant once deployed, and _site/ is this staging
+      # directory itself. Everything else in the repository is site content,
+      # including activity.preview.json, which the preview page fetches by design.
+      - name: Stage the site
+        run: rsync -a --exclude '/.git/' --exclude '/.github/' --exclude '/.gitignore' --exclude '/AGENTS.md' --exclude '/scripts/' --exclude '/_site/' ./ _site/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,9 @@
+# Generated at deploy time by .github/workflows/deploy.yml and published straight
+# to Pages. It is deliberately not source: it needs a token to produce, it goes
+# stale the moment it is written, and the placeholder copy that stands in for it
+# before the first run must never reach the live site. Keeping it out of the
+# repository is what makes that structural rather than a matter of remembering.
+activity.json
+
+# Staging directory the deploy workflow builds the Pages artifact from.
+_site/

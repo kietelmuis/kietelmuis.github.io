@@ -8,6 +8,7 @@
   var groups = [
     ['.section-title', 0, 0],
     ['.section-sub', 0, 0.12],
+    ['.about-body p,.about-fact', 0.06, 0.05],
     ['.timeline-tag,.timeline-title,.timeline-company,.timeline-desc', 0.06, 0.04],
     ['.tile-name,.tile-desc,.tile-stack', 0.06, 0.02],
     ['.skill-key,.skill-val', 0.08, 0],

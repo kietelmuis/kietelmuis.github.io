@@ -34,11 +34,19 @@
       <div class="nav-right">
         <div class="nav-links">
           <a href="#projects" data-i18n="projects">Projects</a>
+          <a href="#about" data-i18n="about">About</a>
           <a href="#timeline" data-i18n="experience">Experience</a>
           <a href="#skills" data-i18n="skills">Skills</a>
           <a href="https://github.com/kietelmuis" target="_blank" rel="noopener">GitHub</a>
           <a class="contact-link" href="#contact" data-i18n="contact">Contact</a>
         </div>
+        <a class="cv-link" href="/omar-hopman-cv.pdf" download aria-label="Resume" data-i18n-aria="resume">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 3v5h5M9 13h6M9 17h4"/>
+          </svg>
+          <span class="cv-label" data-i18n="resume">Resume</span>
+        </a>
         <button id="themeToggle" data-i18n-aria="switchTheme" class="theme-toggle" type="button" aria-label="Switch color theme" aria-pressed="false">
           <svg class="icon-sun" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
             <circle cx="10" cy="10" r="3.6" />
@@ -168,9 +176,69 @@
       </div>
     </section>
 
+    <section id="about">
+      <span class="chapter-num" aria-hidden="true">02</span>
+      <div class="wrap">
+      <h2 class="section-title"><span class="grad-text" data-i18n="about">About</span></h2>
+      <p class="section-sub" data-i18n="aboutIntro">
+        I&rsquo;m Omar, a software development student from the Netherlands.
+      </p>
+
+      <div class="about-grid">
+        <div class="about-body">
+          <p data-i18n="aboutP1">
+            My interest is in low-level work: filesystems, graphics, and anything that
+            makes me dig into how things really work.
+          </p>
+          <p data-i18n="aboutP2">
+            I started out building desktop apps in C#, then got into backend work during
+            my internship at VWE. Since then most of my projects have been in Rust: a
+            game engine, an ext4 driver for Windows, a gameplay capture tool.
+            There&rsquo;s some Go and Dart in there too.
+          </p>
+          <p data-i18n="aboutP3">
+            I usually build things because I needed them and nothing else did the job.
+            I care about code that&rsquo;s easy to read and error messages that actually
+            tell you what went wrong.
+          </p>
+        </div>
+
+        <aside class="about-side">
+          <a class="cv-link cv-link--about" href="/omar-hopman-cv.pdf" download aria-label="Resume" data-i18n-aria="resume">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+              <path d="M14 3v5h5M9 13h6M9 17h4"/>
+            </svg>
+            <span class="cv-label" data-i18n="resume">Resume</span>
+          </a>
+
+          <dl class="about-facts">
+            <div class="about-fact">
+              <dt data-i18n="factBased">Based in</dt>
+              <dd data-i18n="factBasedVal">The Netherlands</dd>
+            </div>
+            <div class="about-fact">
+              <dt data-i18n="factFocus">Focus</dt>
+              <dd data-i18n="factFocusVal">Backend &amp; systems work</dd>
+            </div>
+            <div class="about-fact">
+              <dt data-i18n="factStatus">Status</dt>
+              <dd data-i18n="factStatusVal">Starting at DMA One, Jan 2027</dd>
+            </div>
+          </dl>
+
+          <a class="about-github" href="https://github.com/kietelmuis" target="_blank" rel="noopener">
+            <svg class="github-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297a12 12 0 0 0-3.79 23.386c.6.111.82-.261.82-.577v-2.234c-3.338.726-4.043-1.416-4.043-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.729.083-.729 1.205.085 1.84 1.237 1.84 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.419-1.305.762-1.605-2.665-.304-5.466-1.333-5.466-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.536-1.524.117-3.176 0 0 1.008-.323 3.301 1.23a11.5 11.5 0 0 1 6.006 0c2.292-1.553 3.298-1.23 3.298-1.23.655 1.653.243 2.874.12 3.176.77.84 1.235 1.91 1.235 3.221 0 4.61-2.805 5.624-5.476 5.921.43.372.823 1.103.823 2.222v3.293c0 .319.216.694.825.576A12.001 12.001 0 0 0 12 .297"/></svg>
+            <span data-i18n="seeGithub">See what I'm building</span>
+          </a>
+        </aside>
+      </div>
+      </div>
+    </section>
+
     <!-- Template — replace with real roles, dates, and companies. Duplicate a .timeline-item block to add more. -->
     <section id="timeline" class="panel">
-      <span class="chapter-num" aria-hidden="true">02</span>
+      <span class="chapter-num" aria-hidden="true">03</span>
       <div class="wrap">
       <h2 class="section-title"><span class="grad-text" data-i18n="experience">Experience</span></h2>
       <p class="section-sub" data-i18n="timelineIntro">Three internships; one finished, one upcoming, one that introduced me to backend work.</p>
@@ -212,7 +280,7 @@
     </section>
 
     <section id="skills">
-      <span class="chapter-num" aria-hidden="true">03</span>
+      <span class="chapter-num" aria-hidden="true">04</span>
       <div class="wrap">
       <h2 class="section-title">
         <span class="grad-text" data-i18n="skills">Skills</span>
@@ -240,7 +308,7 @@
     </section>
 
     <section id="contact" class="panel">
-      <span class="chapter-num" aria-hidden="true">04</span>
+      <span class="chapter-num" aria-hidden="true">05</span>
       <div class="wrap">
       <h2 class="section-title"><span class="grad-text">Contact</span></h2>
       <p class="contact-lede" data-i18n="contactText">

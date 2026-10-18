@@ -57,6 +57,9 @@
     --accent-glow-2: rgba(30, 32, 48, 0.06);
     --accent-halo: rgba(106, 95, 209, 0.11);
     --accent-halo-soft: rgba(106, 95, 209, 0.04);
+    /* Midpoint of --gradient, so the dot grid shares the hover border's
+       silver rather than introducing a second hue behind the text. */
+    --grid-dot: #a3a6b1;
     --gradient: linear-gradient(120deg, #dcdde2, #a3a6b1 50%, #e4e5e9);
     --wave-rgb: 112, 98, 205;
     --wave-alpha: 0.95;
@@ -78,6 +81,7 @@ html[data-theme="dark"] {
     --accent-glow-2: rgba(205, 210, 238, 0.07);
     --accent-halo: rgba(169, 158, 242, 0.14);
     --accent-halo-soft: rgba(169, 158, 242, 0.05);
+    --grid-dot: #9a9dad;
     --gradient: linear-gradient(120deg, #3b3d48, #9a9dad 50%, #3b3d48);
     --wave-rgb: 158, 148, 246;
     --wave-alpha: 1.45;
@@ -932,14 +936,45 @@ main > section > .wrap {
     border-radius: 6px;
     background: var(--bg);
     transition: box-shadow 0.25s ease;
-    /* Tilt writes --tilt-x/y/scale; the reveal animates --enter-y.
-       Keeping the composition here means JS and GSAP never fight over
-       the transform property itself. */
-    transform: perspective(700px)
-        translateY(var(--enter-y, 0px))
-        rotateX(var(--tilt-x, 0deg))
-        rotateY(var(--tilt-y, 0deg))
-        scale(var(--tilt-s, 1));
+    /* Only the reveal animates --enter-y; JS and GSAP never fight over the
+       transform property itself. The card no longer tilts. */
+    transform: translateY(var(--enter-y, 0px));
+}
+
+/* Cursor-lit dot grid: a dot pattern masked to a soft circle at the pointer,
+   so the grid materialises under the cursor and falls off toward the edges.
+   Reads like a shader preview rather than a hover highlight. */
+.project-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    /* Translucent silver, not solid: the dots stay behind the text as texture
+       and never compete with it for contrast. */
+    background-image: radial-gradient(
+        color-mix(in srgb, var(--grid-dot) 60%, transparent) 0.9px,
+        transparent 1.2px
+    );
+    background-size: 14px 14px;
+    /* Grid stays anchored to the card; only the light moves across it. */
+    background-position: 0 0;
+    -webkit-mask: radial-gradient(circle 150px at var(--mx, 50%) var(--my, 50%), #000, transparent 70%);
+    mask: radial-gradient(circle 150px at var(--mx, 50%) var(--my, 50%), #000, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.project-card:hover::before {
+    opacity: 0.26;
+}
+
+/* A cursor-following pattern is motion; reduced-motion users get the static
+   hover treatment (border glow + purple name) and nothing that tracks. */
+@media (prefers-reduced-motion: reduce) {
+    .project-card::before {
+        display: none;
+    }
 }
 
 .project-card::after {
@@ -971,12 +1006,8 @@ main > section > .wrap {
         0 10px 30px -22px var(--accent-glow-2);
 }
 
-/* Only promote to its own layer while it's actually moving. */
-.project-card.is-tilting {
-    will-change: transform;
-}
-
-/* Fallback when JS tilt is unavailable/disabled (touch, reduced motion): plain CSS press feedback. */
+/* Fallback when the cursor spotlight is unavailable (touch, reduced motion):
+   plain CSS press feedback instead. */
 .project-card.static-card {
     transition:
         box-shadow 0.25s ease,
@@ -984,10 +1015,12 @@ main > section > .wrap {
 }
 
 .project-card.static-card:active {
-    transform: perspective(700px) scale(0.985);
+    transform: translateY(var(--enter-y, 0px)) scale(0.985);
 }
 
 .project-body {
+    position: relative;
+    z-index: 1;
     padding: 1.25rem 1.4rem 1.5rem;
     display: flex;
     flex-direction: column;
@@ -1040,6 +1073,21 @@ main > section > .wrap {
 .tile-stack .sep {
     margin: 0 0.4rem;
     color: var(--line);
+}
+
+/* Stack row and the details cue share one line: stack left, cue hard right. */
+.tile-foot {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.tile-more {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--accent);
+    white-space: nowrap;
 }
 
 /* TIMELINE */

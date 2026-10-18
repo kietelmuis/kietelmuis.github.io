@@ -106,69 +106,87 @@
 
       <div class="grid">
 
-        <a class="project-card" data-tilt href="projects/nivalis-rs.html">
+        <a class="project-card" href="projects/nivalis-rs.html">
           <div class="project-body">
             <div class="tile-top">
               <span class="tile-name">nivalis</span>
               <span class="tile-status" data-i18n="inProgress">in progress</span>
             </div>
             <p class="tile-desc">A GPU renderer built on wgpu.</p>
-            <p class="tile-stack">Rust<span class="sep">&middot;</span>wgpu</p>
+            <div class="tile-foot">
+              <p class="tile-stack">Rust<span class="sep">&middot;</span>wgpu</p>
+              <span class="tile-more" data-i18n="viewDetails">Read →</span>
+            </div>
           </div>
         </a>
 
-        <a class="project-card" data-tilt href="projects/winext.html">
+        <a class="project-card" href="projects/winext.html">
           <div class="project-body">
             <div class="tile-top">
               <span class="tile-name">winext</span>
               <span class="tile-status" data-i18n="inProgress">in progress</span>
             </div>
             <p class="tile-desc">A WinFsp driver that exposes ext4 filesystems on Windows.</p>
-            <p class="tile-stack">Rust<span class="sep">&middot;</span>WinFsp</p>
+            <div class="tile-foot">
+              <p class="tile-stack">Rust<span class="sep">&middot;</span>WinFsp</p>
+              <span class="tile-more" data-i18n="viewDetails">Read →</span>
+            </div>
           </div>
         </a>
 
-        <a class="project-card" data-tilt href="projects/xrooster.html">
+        <a class="project-card" href="projects/xrooster.html">
           <div class="project-body">
             <div class="tile-top">
               <span class="tile-name">XRooster</span>
               <span class="tile-status" data-i18n="openSource">open source</span>
             </div>
             <p class="tile-desc">A school schedule app built on the Xedule API.</p>
-            <p class="tile-stack">Dart<span class="sep">&middot;</span>Flutter</p>
+            <div class="tile-foot">
+              <p class="tile-stack">Dart<span class="sep">&middot;</span>Flutter</p>
+              <span class="tile-more" data-i18n="viewDetails">Read →</span>
+            </div>
           </div>
         </a>
 
-        <a class="project-card" data-tilt href="projects/clipper.html">
+        <a class="project-card" href="projects/clipper.html">
           <div class="project-body">
             <div class="tile-top">
               <span class="tile-name">Clipper</span>
               <span class="tile-status" data-i18n="inProgress">in progress</span>
             </div>
             <p class="tile-desc">Gameplay capture with a rolling replay buffer, targeting a 30-second window.</p>
-            <p class="tile-stack">Rust<span class="sep">&middot;</span>FFmpeg</p>
+            <div class="tile-foot">
+              <p class="tile-stack">Rust<span class="sep">&middot;</span>FFmpeg</p>
+              <span class="tile-more" data-i18n="viewDetails">Read →</span>
+            </div>
           </div>
         </a>
 
-        <a class="project-card" data-tilt href="projects/exhibition.html">
+        <a class="project-card" href="projects/exhibition.html">
           <div class="project-body">
             <div class="tile-top">
               <span class="tile-name">Exhibition</span>
               <span class="tile-status" data-i18n="openSource">open source</span>
             </div>
             <p class="tile-desc">A game launcher integrating BitTorrent and Real-Debrid clients.</p>
-            <p class="tile-stack">Go</p>
+            <div class="tile-foot">
+              <p class="tile-stack">Go</p>
+              <span class="tile-more" data-i18n="viewDetails">Read →</span>
+            </div>
           </div>
         </a>
 
-        <a class="project-card" data-tilt href="projects/wsteam.html">
+        <a class="project-card" href="projects/wsteam.html">
           <div class="project-body">
             <div class="tile-top">
               <span class="tile-name">wsteam</span>
               <span class="tile-status" data-i18n="forLearning">for learning</span>
             </div>
             <p class="tile-desc">A CLI Steam manifest downloader, written in C++.</p>
-            <p class="tile-stack">C++</p>
+            <div class="tile-foot">
+              <p class="tile-stack">C++</p>
+              <span class="tile-more" data-i18n="viewDetails">Read →</span>
+            </div>
           </div>
         </a>
 
@@ -447,11 +465,12 @@
     })();
   </script>
 
-  <!-- Project card tilt: decorative mouse-tracking, spring-lerped, gated to fine pointers.
-       Writes --tilt-x / --tilt-y / --tilt-s; .project-card composes the transform. -->
+  <!-- Project card spotlight: a soft circle that follows the cursor, clipped to the
+       card's rounded box by CSS. Writes --mx / --my; coalesced to one rAF write
+       per frame so fast mouse movement doesn't thrash the style setter. -->
   <script>
     (function () {
-      var cards = Array.prototype.slice.call(document.querySelectorAll('[data-tilt]'));
+      var cards = Array.prototype.slice.call(document.querySelectorAll('.project-card'));
       if (!cards.length) return;
 
       var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -462,92 +481,39 @@
         return;
       }
 
-      var MAX = 9;          // degrees at the card corners
-      var LERP = 0.16;
-      var EPS = 0.05;       // below this we're flat and the loop can idle
+      var latest = cards.map(function () { return null; });
       var running = false;
 
-      var states = cards.map(function (card) {
-        var s = { el: card, tx: 0, ty: 0, cx: 0, cy: 0, scale: 1, pressed: false };
-        card.style.setProperty('--tilt-x', '0deg');
-        card.style.setProperty('--tilt-y', '0deg');
-        card.style.setProperty('--tilt-s', '1');
+      function flush() {
+        running = false;
+        cards.forEach(function (card, i) {
+          var p = latest[i];
+          if (!p) return;
+          latest[i] = null;
+          card.style.setProperty('--mx', p.x + 'px');
+          card.style.setProperty('--my', p.y + 'px');
+        });
+      }
+
+      cards.forEach(function (card, i) {
+        // Nothing transforms on hover now, so this rect stays valid for the
+        // whole hover — no feedback loop, no need to re-measure per event.
+        var rect = null;
+
+        card.addEventListener('mouseenter', function () {
+          rect = card.getBoundingClientRect();
+        });
 
         card.addEventListener('mousemove', function (e) {
-          var r = card.getBoundingClientRect();
-          s.tx = ((e.clientX - r.left) / r.width - 0.5) * 2 * MAX;
-          s.ty = -((e.clientY - r.top) / r.height - 0.5) * 2 * MAX;
-          wake();
+          if (!rect) rect = card.getBoundingClientRect();
+          latest[i] = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+          if (running) return;
+          running = true;
+          requestAnimationFrame(flush);
         });
 
-        card.addEventListener('mouseleave', function () {
-          s.tx = 0;
-          s.ty = 0;
-          s.pressed = false;
-          wake();
-        });
-
-        card.addEventListener('mousedown', function () { s.pressed = true; wake(); });
-
-        // focus-follows, so tabbing reads the same as hovering
-        card.addEventListener('focus', function () { s.tx = 0; s.ty = -MAX * 0.5; wake(); });
-        card.addEventListener('blur', function () { s.tx = 0; s.ty = 0; wake(); });
-
-        return s;
+        card.addEventListener('mouseleave', function () { rect = null; });
       });
-
-      // one listener, not one per card
-      window.addEventListener('mouseup', function () {
-        states.forEach(function (s) { s.pressed = false; });
-        wake();
-      });
-
-      function wake() {
-        if (running) return;
-        running = true;
-        requestAnimationFrame(tick);
-      }
-
-      function tick() {
-        var active = false;
-
-        for (var i = 0; i < states.length; i++) {
-          var s = states[i];
-
-          s.cx += (s.tx - s.cx) * LERP;
-          s.cy += (s.ty - s.cy) * LERP;
-
-          if (Math.abs(s.tx - s.cx) < EPS) s.cx = s.tx;
-          if (Math.abs(s.ty - s.cy) < EPS) s.cy = s.ty;
-
-          var settled = s.cx === s.tx && s.cy === s.ty;
-          var wantScale = s.pressed ? 0.98 : 1.015;
-          s.scale += (wantScale - s.scale) * LERP;
-          if (Math.abs(wantScale - s.scale) < 0.001) s.scale = wantScale;
-
-          if (settled && !s.pressed) {
-            // fully at rest: write the flat values once and stop touching it
-            s.el.style.setProperty('--tilt-x', '0deg');
-            s.el.style.setProperty('--tilt-y', '0deg');
-            s.el.style.setProperty('--tilt-s', '1');
-            s.el.classList.remove('is-tilting');
-            continue;
-          }
-
-          active = true;
-          s.el.classList.add('is-tilting');
-          s.el.style.setProperty('--tilt-x', s.cy.toFixed(2) + 'deg');
-          s.el.style.setProperty('--tilt-y', s.cx.toFixed(2) + 'deg');
-          s.el.style.setProperty('--tilt-s', s.scale.toFixed(3));
-        }
-
-        // Keep looping only while something is still moving or held.
-        if (active || states.some(function (s) { return s.pressed; })) {
-          requestAnimationFrame(tick);
-        } else {
-          running = false;
-        }
-      }
     })();
   </script>
 

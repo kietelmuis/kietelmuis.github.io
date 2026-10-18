@@ -1733,13 +1733,24 @@ main > section > .wrap {
 }
 
 @media (max-width: 640px) {
+    /* The 120% root is tuned for the desktop measure. On a phone it inflates
+       every rem-based length (type, gutters, section padding) by about 20%, which
+       reads as the page being zoomed in, so the rem scale drops back to 100%. */
+    html {
+        font-size: 100%;
+    }
+
     .hero {
         min-height: auto;
     }
 
+    /* The base rule reserves a left gutter only, because on desktop the copy is
+       too narrow to reach the right edge. On a phone the badge and lede do reach
+       it, which leaves the hero flush right against a 1.25rem left gutter. Move
+       the gutter into padding so both sides get one. */
     .hero-inner {
-        margin-left: 1.25rem;
-        padding: 6rem 0 3.5rem;
+        margin-left: 0;
+        padding: 6rem 1.25rem 3.5rem;
     }
 
     /* Narrow screens: reclaim horizontal room for the control cluster. The
@@ -1782,6 +1793,25 @@ main > section > .wrap {
 
     .footer-inner {
         flex-direction: column;
+    }
+
+    /* The 6.5rem key column and 1.5rem gap leave the value about half the
+       measure, which is less than an email address needs, so the value used to
+       run past the right edge (on top of body's overflow-x: hidden, which hid
+       it). Stack the row instead and the value gets the full width. The break
+       rule is the fallback for a value with no break opportunity at all. */
+    .contact-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.35rem;
+    }
+
+    .contact-key {
+        width: auto;
+    }
+
+    .contact-val {
+        overflow-wrap: anywhere;
     }
 }
 

@@ -45,6 +45,13 @@
     --font-pixel-grid: "Geist Pixel Grid", "Satoshi", sans-serif;
     --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
+    /* The chapter rail on writeup pages: the width of the list itself and the
+       gutter between it and the prose. The two together are what the writeup
+       .wrap gives up on its left (see the CHAPTER NAV block). Kept here because
+       both the fixed rail and the in-flow .wrap need the same numbers. */
+    --rail-w: 12rem;
+    --rail-gap: 2.5rem;
+
     --bg: #ffffff;
     --bg-alt: #f6f6f9;
     --ink: #141418;
@@ -978,14 +985,44 @@ main > section#timeline::before {
     position: fixed;
     z-index: 30;
     top: 50%;
-    left: calc((100vw - 64rem) / 2 - 11.25rem);
-    width: 10rem;
+    /* The rail sits inside the page block, in the space the writeup .wrap
+       reserves for it, rather than hanging in the viewport margin. It used to be
+       pinned at calc((100vw - 64rem) / 2 - 11.25rem), which is off the left edge
+       of every screen narrower than roughly 1660px -- and since it is only shown
+       from 1200px up, that was most of the range where it was meant to work.
+
+       50% is the centre of the initial containing block, which is the same box
+       the content .wrap is centred in, so the block's left edge is simply
+       "50% - 32rem". The max() covers widths where the 64rem block has itself
+       started to clamp, where that figure would drift left of the real edge. */
+    left: max(1.75rem, calc(50% - 32rem + 1.75rem));
+    width: var(--rail-w);
     display: grid;
-    gap: 0.4rem;
+    gap: 0;
     transform: translateY(-50%);
     opacity: 1;
     visibility: visible;
     transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Reserving the rail's space on the page side of the fixed list above.
+   Every .wrap on a writeup moves its text right by the rail plus the gutter, so
+   the header, the body, the prev/next row and the footer all stay on one left
+   edge, and the rail fills the space that opens up on the left.
+
+   This is what makes the rail fit at 1200px instead of 1660px: the space is
+   taken from the block rather than from the viewport. It costs the writeup
+   about 280px of measure, which is affordable because the prose is already
+   capped at 40rem -- only code blocks and rules get shorter.
+
+   Scoped to writeups by :has(.pp-head), and excludes .nav-inner so the navbar
+   keeps the same position on every page: its link row is centred with
+   left: 50% against that wrapper, so shifting it would drag the links off the
+   middle of the screen. */
+@media (min-width: 1200px) {
+    body:has(.pp-head) .wrap:not(.nav-inner) {
+        padding-left: calc(1.75rem + var(--rail-w) + var(--rail-gap));
+    }
 }
 
 .chapter-nav.is-at-top {
@@ -994,13 +1031,18 @@ main > section#timeline::before {
     pointer-events: none;
 }
 
+/* Rows are ruled off from each other rather than separated by a gap, which is
+   what gives the list its "one chapter per line" read. The transparent left
+   border is there to hold the 2px slot open, so the current chapter's accent bar
+   does not nudge its text 2px to the right of the others. */
 .chapter-nav a {
     display: grid;
     grid-template-columns: 1.7rem 1fr;
     align-items: baseline;
     gap: 0.6rem;
-    padding: 0.55rem 0.65rem;
-    border-left: 1px solid var(--line);
+    padding: 0.62rem 0.7rem;
+    border-top: 1px solid var(--line);
+    border-left: 2px solid transparent;
     color: var(--muted);
     font-size: 0.82rem;
     line-height: 1.35;
@@ -1011,10 +1053,16 @@ main > section#timeline::before {
         text-shadow 0.3s ease;
 }
 
-.chapter-project-title {
-    margin: 0 0 0.35rem;
-    padding: 0.35rem 0.65rem 0.7rem;
+.chapter-nav a:last-child {
     border-bottom: 1px solid var(--line);
+}
+
+/* No border-bottom here: the first chapter row's border-top is the rule under
+   the title, and having both stacks them into a double line. Padding-left is 0
+   so the title shares its left edge with the current chapter's accent bar. */
+.chapter-project-title {
+    margin: 0;
+    padding: 0.35rem 0 0.7rem;
     color: var(--ink);
     font-family: var(--font-mono);
     font-size: 0.82rem;
@@ -1042,13 +1090,16 @@ main > section#timeline::before {
     transition: color 0.3s ease, text-shadow 0.3s ease;
 }
 
-.chapter-nav a:hover,
-.chapter-nav a.is-past {
+.chapter-nav a:hover {
     color: var(--accent);
     border-left-color: var(--accent);
 }
 
+/* Chapters already read keep the accent text, but they no longer carry a bar.
+   With a rule per row the bar is the current chapter's marker, and repeating it
+   down every row read so far turned the rail into a solid accent stripe. */
 .chapter-nav a.is-past {
+    color: var(--accent);
     text-shadow: 0 0 10px var(--accent-halo);
 }
 
@@ -1741,7 +1792,9 @@ main > section#timeline::before {
     }
 }
 
-@media (max-width: 1399px) {
+/* Below this the rail would be taking more of the block than the prose can
+   spare. Mirrors the min-width in the CHAPTER NAV block above. */
+@media (max-width: 1199px) {
     .chapter-nav {
         display: none;
     }

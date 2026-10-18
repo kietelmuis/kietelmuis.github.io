@@ -972,6 +972,23 @@ main > section > .wrap {
     height: var(--segment-height, 0px);
 }
 
+/* An upcoming entry is a placeholder, not a role yet, so its segment stays dashed
+   instead of filling. The fill is switched off outright rather than made faint: at a
+   low opacity it still paints a wash over the whole segment once the reading line
+   passes, burying the stripes and leaving the placeholder as the most solid line on
+   the track. `background: none` keeps the element measurable while painting nothing. */
+.timeline-item.is-upcoming::before {
+    background: repeating-linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--ink) 14%, transparent) 0 4px,
+        transparent 4px 9px
+    );
+}
+
+.timeline-item.is-upcoming::after {
+    background: none;
+}
+
 .timeline-cursor {
     position: absolute;
     left: var(--line-x);

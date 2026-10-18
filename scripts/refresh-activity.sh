@@ -7,8 +7,10 @@
 #
 #   GITHUB_TOKEN=ghp_xxx ./scripts/refresh-activity.sh
 #
-# A classic token needs no scopes for public data: `public_repo` is enough, and
-# nothing further is required to read a public user's contribution calendar.
+# A classic token with `read:user` is the minimal scope that works. The calendar
+# is public data but the field is user-scoped, so an unauthenticated query is
+# rejected outright; nothing wider is needed and no repository access at all is
+# involved.
 set -euo pipefail
 
 LOGIN="${GITHUB_LOGIN:-kietelmuis}"
@@ -64,13 +66,27 @@ if [ "$(echo "$RESPONSE" | jq -r "$CALENDAR.totalContributions // empty")" = "" 
   exit 1
 fi
 
-echo "$RESPONSE" | jq '{
-  login: '"$LOGIN"',
-  year: '"$YEAR"',
+# login and year arrive as arguments rather than being interpolated into the
+# program. Interpolating only looked like it worked because $YEAR is a bare
+# number: the shell turned `'"$LOGIN"'` into `login: kietelmuis`, which jq reads
+# as a call to a filter named kietelmuis and refuses to compile. --arg takes any
+# string, and --argjson keeps year a number as the placeholder file has it.
+#
+# Written to a temp file and moved into place. The shell creates a redirect's
+# target before the command runs, so a jq that fails leaves an empty $OUT behind
+# for anything that checks only that the file exists.
+TMP="$OUT.tmp.$$"
+trap 'rm -f "$TMP"' EXIT
+
+echo "$RESPONSE" | jq --arg login "$LOGIN" --argjson year "$YEAR" '{
+  login: $login,
+  year: $year,
   total: .data.user.contributionsCollection.contributionCalendar.totalContributions,
   days: [ .data.user.contributionsCollection.contributionCalendar.weeks[].contributionDays[]
          | { date, count: .contributionCount } ]
-}' > "$OUT"
+}' > "$TMP"
+
+mv "$TMP" "$OUT"
 
 DAYS=$(jq '.days | length' "$OUT")
 TOTAL=$(jq '.total' "$OUT")

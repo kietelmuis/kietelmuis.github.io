@@ -71,16 +71,44 @@ jobs:
       - name: Warn when the snapshot could not be refreshed
         if: steps.refresh.outcome == 'failure'
         run: |
+          # Also into the run summary. The step is allowed to fail so that a
+          # token problem cannot take the whole site down, but that means the run
+          # is still green, and a green run with no grid on the page is exactly
+          # the kind of thing nobody notices for a week.
+          {
+            echo "### Contribution snapshot not refreshed"
+            echo
+            echo "\`scripts/refresh-activity.sh\` failed. This deploy carries the previous"
+            echo "snapshot if one was cached, or no grid at all if it was not."
+            echo
+            echo "Check that the \`ACTIVITY_TOKEN\` secret is set and has not expired."
+          } >> "$GITHUB_STEP_SUMMARY"
           echo "::warning title=Contribution snapshot not refreshed::scripts/refresh-activity.sh failed. Deploying with the previous snapshot if one was cached. Check that the ACTIVITY_TOKEN secret is set and has not expired."
 
       # The claim this whole pipeline exists to make good on: the live site never
       # shows invented contribution counts. A placeholder that reaches this point
       # fails the build instead of being published and looking real.
-      - name: Reject placeholder data
+      #
+      # Absent and unreadable are deliberately different verdicts. A refresh that
+      # failed with nothing cached behind it leaves no file, which is a normal
+      # state, and the page removes the grid on its own. A file that exists but
+      # cannot be parsed is a fault: publishing it means the page fetches a broken
+      # snapshot and drops the grid silently.
+      - name: Check the snapshot
         run: |
-          if [ ! -s activity.json ]; then
-            echo "No snapshot available. The About grid removes itself; the page is otherwise unaffected."
+          if [ ! -e activity.json ]; then
+            echo "No snapshot present. The About grid removes itself; the page is otherwise unaffected."
+            {
+              echo "### No contribution snapshot"
+              echo
+              echo "This deploy carries no contribution grid. The rest of the site is"
+              echo "unaffected, and the About card closes up around it."
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 0
+          fi
+          if ! jq -e . activity.json > /dev/null 2>&1; then
+            echo "::error title=Unreadable snapshot::activity.json exists but is not valid JSON. Refusing to publish it."
+            exit 1
           fi
           if [ "$(jq -r '.placeholder // false' activity.json)" = "true" ]; then
             echo "::error title=Placeholder snapshot::activity.json carries placeholder: true. Refusing to publish invented contribution counts."

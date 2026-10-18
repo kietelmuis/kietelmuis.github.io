@@ -138,6 +138,9 @@ a {
 .nav-right {
     display: flex;
     align-items: center;
+    /* Resume, language and theme are the controls that have to stay reachable,
+       so this cluster never shrinks or wraps. The brand gives way instead. */
+    flex: 0 0 auto;
     gap: 0.7rem;
 }
 
@@ -254,25 +257,88 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    /* space-between alone lets the brand and the control cluster touch at
+       narrow widths, because neither side is allowed to shrink. This is the
+       floor on the gap between them. */
+    gap: 1rem;
     height: 64px;
     font-size: 0.9rem;
 }
 
+/* The brand yields space instead of pushing the controls off-screen. It used to
+   be inline-flex to sit the avatar beside the name; with the avatar gone it is
+   plain truncated text, and min-width: 0 is what actually lets a flex item
+   shrink below its content width and ellipsis rather than overflow. */
 .brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-family: var(--font-body);
     font-weight: 400;
     letter-spacing: -0.01em;
     font-size: 1.05rem;
 }
 
-.brand img {
-    width: 34px;
-    height: 34px;
+/* The avatar sat in the navbar at 34px while the brand text was beside it; it
+   now heads the About sidebar next to the GitHub handle, where it is the
+   section's only visual anchor and can afford to be larger. */
+.about-id {
+    display: flex;
+    align-items: center;
+    gap: 0.95rem;
+    /* The card is a column flex with align-items: flex-start, so this row
+       shrink-to-fits its content and is not capped by the card at all. Without
+       the cap it overflows the card rather than compressing, and the handle's
+       ellipsis never gets a chance to engage. */
+    max-width: 100%;
+}
+
+/* Geist Mono is the Geist face this site actually loads — there is no plain
+   Geist sans here, Satoshi is the body font — and mono is the convention for a
+   handle anyway, matching the other labels in this card. */
+.about-handle {
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    color: var(--ink);
+    /* Last-resort safety net. The avatar cannot shrink, so the handle absorbs
+       whatever is left and ellipses rather than pushing the pair past the card
+       edge on a pathologically narrow screen. In practice the scale-down below
+       means this never actually triggers. */
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.about-avatar {
+    width: 76px;
+    height: 76px;
+    flex: 0 0 auto;
     object-fit: cover;
-    border-radius: 4px;
+    border-radius: 8px;
+}
+
+/* The avatar cannot shrink and the handle has a fixed intrinsic width, so below
+   about 390px the row outgrows the card: 76px + 12.24px gap + 152px of handle
+   needs 246px, and the card's inner width is ~220px there once the wrap gutter
+   and the card's own padding are taken out. Stepping both down keeps the pair on
+   one line instead of spilling past the card edge. */
+@media (max-width: 400px) {
+    .about-id {
+        gap: 0.75rem;
+    }
+
+    .about-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 7px;
+    }
+
+    .about-handle {
+        font-size: 1.05rem;
+    }
 }
 
 .nav-links {

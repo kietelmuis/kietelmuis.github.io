@@ -65,6 +65,21 @@
     --wave-alpha: 0.95;
     --nav-bg: rgba(255, 255, 255, 0.8);
     --tile-hover: #f4f4f8;
+
+    /* ATMOSPHERE — the wash behind the numbered sections. Light theme stays
+       almost neutral on purpose: --accent is used for small text (timeline
+       tags, tile cues) and it only clears 4.5:1 against a near-white ground,
+       so any perceptible tint would push those labels under AA. Dark theme,
+       where the same accent sits on near-black, has the headroom to carry the
+       wash properly. The solver that produced these values held every stop —
+       including both radial composites — at 4.55:1 or better. */
+    --atmo-top: #fefeff;
+    --atmo-quiet: #fbfbfd;
+    --atmo-deep: #f7f7f9;
+    --atmo-base: #f7f7f9;
+    --atmo-bloom: rgba(106, 95, 209, 0.02);
+    --atmo-glow: rgba(182, 185, 196, 0.04);
+
     color-scheme: light;
 }
 
@@ -87,6 +102,18 @@ html[data-theme="dark"] {
     --wave-alpha: 1.45;
     --nav-bg: rgba(14, 14, 18, 0.8);
     --tile-hover: #181820;
+
+    /* Dark theme carries the wash properly: a near-black top falling to a deep
+       violet base, with the accent blooming through the middle. Same shape as
+       the light theme's stops with the values inverted rather than re-designed,
+       so the two read as the same object in either palette. */
+    --atmo-top: #07070b;
+    --atmo-quiet: #0b0b13;
+    --atmo-deep: #141424;
+    --atmo-base: #252537;
+    --atmo-bloom: rgba(169, 158, 242, 0.20);
+    --atmo-glow: rgba(163, 166, 177, 0.10);
+
     color-scheme: dark;
 }
 
@@ -887,6 +914,61 @@ main > section > .wrap {
 }
 
 .chapter-num { isolation: isolate; }
+
+/* ATMOSPHERE — a three-layer wash behind the numbered sections: a vertical fall
+   from near-black (dark theme) down into the accent, an accent bloom through
+   the middle, and a soft glow rising off the bottom edge. Same shape as the
+   reference, recoloured to the site palette.
+
+   Behind all five sections it stops being an accent and becomes wallpaper: the
+   same gradient five times reads as a texture the whole page happens to sit on,
+   and is noticed nowhere in particular. So it goes on one — Experience, which is
+   the page's hinge between what you have built and who you are, and which the
+   timeline needs a distinct ground under it anyway. One section is a moment;
+   five is a decision nobody notices.
+
+   Scoped to main > section so nothing outside the home page picks it up.
+
+   Absolute rather than fixed: a fixed layer would be pinned to the viewport, so
+   every section would share one slide of the same gradient instead of each
+   carrying its own.
+
+   z-index -1 puts it above the section's own background but below its content.
+   That works because `section` already establishes a stacking context with
+   z-index: 0, so the pseudo-element cannot escape behind the page. */
+main > section#timeline::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(
+            ellipse at 50% 100%,
+            var(--atmo-glow) 0%,
+            transparent 65%
+        ),
+        radial-gradient(
+            ellipse at 50% 58%,
+            var(--atmo-bloom) 0%,
+            transparent 75%
+        ),
+        linear-gradient(
+            180deg,
+            var(--atmo-top) 0%,
+            var(--atmo-quiet) 25%,
+            var(--atmo-deep) 65%,
+            var(--atmo-base) 100%
+        );
+}
+
+/* .panel sections were alternating bands via --bg-alt, and the wash paints over
+   that background entirely. Backing the pseudo-element off lets the panel tint
+   read through, so the section still sits in the 01-02-03 rhythm rather than
+   floating free of it. */
+main > section#timeline::before {
+    opacity: 0.9;
+}
 
 @media (prefers-reduced-motion: reduce) {
     .chapter-num, .chapter-num::before { transition: none; animation: none; transform: none; }

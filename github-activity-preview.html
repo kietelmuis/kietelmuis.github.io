@@ -6,84 +6,49 @@
   <title>GitHub activity preview — Omar Hopman</title>
   <link rel="stylesheet" href="style.css">
   <style>
+    /* Preview harness only: gives the component room to breathe on its own page.
+       The component's own styles live in style.css under ACTIVITY, so moving it
+       onto the About section later means copying markup and adding one script
+       tag — nothing here. */
     body { min-height: 100vh; }
     .preview { padding-top: 5rem; padding-bottom: 5rem; }
-    .activity { margin-top: 2rem; }
-    .activity-total { display: flex; align-items: baseline; gap: .55rem; margin-bottom: .75rem; font-size: .85rem; color: var(--muted); }
-    .activity-total strong { display: inline-flex; color: var(--ink); font: 1.65rem/1 var(--font-mono); letter-spacing: -.06em; font-variant-numeric: tabular-nums; }
-    .count-digit { display: inline-block; height: 1em; overflow: hidden; }
-    .count-reel { display: flex; flex-direction: column; transform: translateY(-10em); transition: transform 1s cubic-bezier(.45, 0, .2, 1); }
-    .count-reel span { height: 1em; line-height: 1em; }
-    .grid-scroll { overflow-x: auto; padding: .85rem 0 .3rem; }
-    .activity-grid { display: grid; grid-template-rows: repeat(7, 11px); grid-auto-flow: column; grid-auto-columns: 11px; gap: 4px; width: max-content; }
-    .day { width: 11px; height: 11px; border-radius: 2px; background: var(--line); }
-    .day[data-level="1"] { background: color-mix(in srgb, var(--accent) 24%, var(--bg)); }
-    .day[data-level="2"] { background: color-mix(in srgb, var(--accent) 46%, var(--bg)); }
-    .day[data-level="3"] { background: color-mix(in srgb, var(--accent) 70%, var(--bg)); }
-    .day[data-level="4"] { background: var(--accent); }
-    .months { display: flex; justify-content: space-between; margin: .45rem 0 0 1.2rem; color: var(--muted); font: .65rem var(--font-mono); }
-    .activity-bottom { display: flex; justify-content: flex-end; margin-top: .75rem; }
-    .legend { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: .68rem; }
-    .legend span:first-child { margin-right: 3px; }
-    @media (prefers-reduced-motion: reduce) { .count-reel { transition: none; } }
+
+    /* Shown only when the placeholder snapshot rendered instead of the real
+       one, so dummy numbers can never be mistaken for real ones. */
+    .activity-notice {
+      margin: 0 0 1.25rem;
+      padding: 0.6rem 0.85rem;
+      border: 1px dashed var(--accent);
+      border-radius: 4px;
+      color: var(--muted);
+      font: 0.78rem/1.5 var(--font-mono);
+    }
+    .activity-notice[hidden] { display: none; }
   </style>
 </head>
 <body>
   <main class="wrap preview">
-    <section class="activity" aria-label="GitHub contribution activity preview">
-      <p class="activity-total"><strong id="contributionCount" aria-label="1,284">1,284</strong><span>contributions this year</span></p>
-      <div class="grid-scroll" aria-label="Contribution graph preview">
-        <div class="activity-grid" id="activityGrid"></div>
-        <div class="months" aria-hidden="true"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span></div>
+    <section class="activity" aria-label="GitHub contribution activity">
+      <p class="activity-notice" hidden>
+        Placeholder data — these are not real contributions. Run
+        <code>scripts/refresh-activity.sh</code> to write the real
+        <code>activity.json</code>, which takes precedence over this file.
+      </p>
+      <p class="activity-total">
+        <strong class="activity-count"></strong>
+        <span>contributions this year</span>
+      </p>
+      <div class="grid-scroll" aria-label="Contribution graph">
+        <div class="activity-grid" data-source="activity.json" data-fallback="activity.preview.json"></div>
+        <div class="months activity-months" aria-hidden="true"></div>
       </div>
       <div class="activity-bottom">
-        <div class="legend" aria-label="Less to more activity"><span>Less</span><i class="day"></i><i class="day" data-level="1"></i><i class="day" data-level="2"></i><i class="day" data-level="3"></i><i class="day" data-level="4"></i><span>More</span></div>
+        <div class="legend" aria-label="Less to more activity">
+          <span>Less</span><i class="day"></i><i class="day" data-level="1"></i><i class="day" data-level="2"></i><i class="day" data-level="3"></i><i class="day" data-level="4"></i><span>More</span>
+        </div>
       </div>
     </section>
   </main>
-  <script>
-    const counter = document.getElementById('contributionCount');
-    const target = '1284';
-    counter.replaceChildren(...target.split('').map((digit, index) => {
-      const window = document.createElement('span');
-      const reel = document.createElement('span');
-      window.className = 'count-digit';
-      window.setAttribute('aria-hidden', 'true');
-      reel.className = 'count-reel';
-      const turns = index + 1;
-      reel.style.transitionDelay = `${(target.length - index) * 100}ms`;
-      for (let number = 0; number < 10 * (turns + 2); number++) {
-        const item = document.createElement('span');
-        item.textContent = number % 10;
-        reel.append(item);
-      }
-      const finalPosition = 10 * (turns + 1) + Number(digit);
-      reel.dataset.position = finalPosition;
-      window.append(reel);
-      reel.style.transform = 'translateY(-10em)';
-      return window;
-    }));
-    counter.insertBefore(document.createTextNode(','), counter.children[1]);
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      counter.querySelectorAll('.count-reel').forEach(reel => {
-        reel.style.transform = `translateY(-${reel.dataset.position}em)`;
-      });
-    }));
-
-    const grid = document.getElementById('activityGrid');
-    const start = new Date('2026-01-01T12:00:00');
-    const end = new Date('2026-12-31T12:00:00');
-    const offset = start.getDay();
-    for (let i = 0; i < offset; i++) grid.append(Object.assign(document.createElement('i'), { className: 'day' }));
-    for (let day = new Date(start); day <= end; day.setDate(day.getDate() + 1)) {
-      const cell = document.createElement('i');
-      const sample = Math.abs(Math.sin(day.getTime() / 86400000 * 12.9898) * 43758.5453) % 1;
-      const count = sample > .76 ? Math.ceil(sample * 8) : sample > .45 ? Math.ceil(sample * 3) : 0;
-      cell.className = 'day';
-      if (count) cell.dataset.level = count > 6 ? 4 : count > 4 ? 3 : count > 2 ? 2 : 1;
-      cell.title = `${day.toLocaleDateString('en', { month: 'short', day: 'numeric' })}: ${count} contributions`;
-      grid.append(cell);
-    }
-  </script>
+  <script src="js/github-activity.js" defer></script>
 </body>
 </html>

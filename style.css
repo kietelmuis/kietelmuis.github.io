@@ -1450,6 +1450,18 @@ main > section > .wrap {
     }
 }
 
+/* The link row is centred by absolute positioning, so it is out of the flex row
+   and cannot see the brand or the controls crowding in from either side. Below
+   about 1100px the six links plus the controls need ~1000px, and the last link
+   ends up underneath the Resume button. Dropping to Contact alone well before
+   that point is what keeps the row honest; above 1100px there is enough slack
+   for the centring to be safe. */
+@media (max-width: 1100px) {
+    .nav-links a:not(.contact-link) {
+        display: none;
+    }
+}
+
 @media (max-width: 640px) {
     .hero {
         min-height: auto;
@@ -1460,8 +1472,28 @@ main > section > .wrap {
         padding: 6rem 0 3.5rem;
     }
 
-    .nav-links a:not(.contact-link) {
-        display: none;
+    /* Narrow screens: reclaim horizontal room for the control cluster. The
+       1.75rem wrap gutter costs 56px, which is most of a 320px viewport, and
+       the EN/NL pair carries 2rem of min-width per button. */
+    .nav .wrap {
+        padding-left: 1.15rem;
+        padding-right: 1.15rem;
+    }
+
+    .nav-inner {
+        gap: 0.6rem;
+    }
+
+    /* Shrink the name slightly rather than let it ellipsis. The brand is within
+       a couple of pixels of its natural width around 350-360px, so this is the
+       difference between "Omar Hopman" and "Omar Hopm…". */
+    .brand {
+        font-size: 0.93rem;
+    }
+
+    .language-option {
+        min-width: 1.5rem;
+        padding: 0 0.25rem;
     }
 
     .nav-right .cv-link {
@@ -1480,6 +1512,26 @@ main > section > .wrap {
 
     .footer-inner {
         flex-direction: column;
+    }
+}
+
+/* Below ~470px the centred Contact link runs under the control cluster: the
+   absolutely positioned row cannot see what is beside it, and at 414-450px they
+   genuinely overlap. Contact is one scroll away in the footer and at #contact,
+   whereas language and theme have no alternative route, so the link goes. */
+@media (max-width: 470px) {
+    .nav-links {
+        display: none;
+    }
+}
+
+/* Only on genuinely tiny viewports does the name still not fit beside Resume,
+   EN/NL and theme. Resume is the one that goes: it is the only control with a
+   duplicate on the page, in the About sidebar card, whereas language and theme
+   have no alternative route anywhere. */
+@media (max-width: 360px) {
+    .nav-right .cv-link {
+        display: none;
     }
 }
 

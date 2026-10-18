@@ -222,6 +222,11 @@
         </div>
 
         <aside class="about-side">
+          <div class="about-id">
+            <img class="about-avatar" src="assets/icons/favicon-96x96.png" alt="" aria-hidden="true" />
+            <span class="about-handle">@kietelmuis</span>
+          </div>
+
           <a class="cv-link cv-link--about" href="/omar-hopman-cv.pdf" download aria-label="Resume" data-i18n-aria="resume">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
@@ -244,6 +249,28 @@
               <dd data-i18n="factStatusVal">Starting at DMA One, Jan 2027</dd>
             </div>
           </dl>
+
+          <!-- No data-fallback here on purpose: the preview page falls back to
+               placeholder data so the component can be worked on, but this is
+               the live site and must never show invented contribution counts.
+               With no activity.json the block removes itself. The deploy
+               workflow generates that file before every publish; to see the grid
+               locally, run scripts/refresh-activity.sh. -->
+          <section class="activity about-activity" aria-label="GitHub contribution activity">
+            <p class="activity-total">
+              <strong class="activity-count"></strong>
+              <span data-i18n="activityWindow">in the last 6 months</span>
+            </p>
+            <div class="grid-scroll" aria-label="Contribution graph">
+              <div class="activity-grid" data-source="activity.json" data-weeks="26"></div>
+              <div class="months activity-months" aria-hidden="true"></div>
+            </div>
+            <div class="activity-bottom">
+              <div class="legend" aria-label="Less to more activity">
+                <span>Less</span><i class="day"></i><i class="day" data-level="1"></i><i class="day" data-level="2"></i><i class="day" data-level="3"></i><i class="day" data-level="4"></i><span>More</span>
+              </div>
+            </div>
+          </section>
 
           <a class="about-github" href="https://github.com/kietelmuis" target="_blank" rel="noopener">
             <svg class="github-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297a12 12 0 0 0-3.79 23.386c.6.111.82-.261.82-.577v-2.234c-3.338.726-4.043-1.416-4.043-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.729.083-.729 1.205.085 1.84 1.237 1.84 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.419-1.305.762-1.605-2.665-.304-5.466-1.333-5.466-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.536-1.524.117-3.176 0 0 1.008-.323 3.301 1.23a11.5 11.5 0 0 1 6.006 0c2.292-1.553 3.298-1.23 3.298-1.23.655 1.653.243 2.874.12 3.176.77.84 1.235 1.91 1.235 3.221 0 4.61-2.805 5.624-5.476 5.921.43.372.823 1.103.823 2.222v3.293c0 .319.216.694.825.576A12.001 12.001 0 0 0 12 .297"/></svg>
@@ -807,5 +834,6 @@
 
   <script src="js/text-reveal.js" defer></script>
   <script src="js/timeline.js" defer></script>
+  <script src="js/github-activity.js" defer></script>
 </body>
 </html>

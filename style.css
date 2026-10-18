@@ -551,10 +551,31 @@ h1 {
     border-color: var(--accent);
 }
 
+/* The card sits up beside the lede instead of below it.
+   The lede is one short line occupying only the left of the measure — at 1440 it
+   ends around x=746 of a 1293px content width — so the right half of that band
+   is empty at exactly the height where the card can live. Lifting it 80px puts
+   its top level with the lede, and the two then read as a single band rather
+   than as a heading with a stranded box underneath.
+
+   Desktop only, for two reasons. Below 1180px the layout stacks and the lede
+   spans the full measure, so the card would ride up over the heading instead of
+   into blank space. And the single-line assumption only holds in the two-column
+   range — which is the same range this is scoped to. */
+@media (min-width: 1181px) {
+    .about-side {
+        margin-top: -4.2rem;
+    }
+}
+
 /* ABOUT */
 .about-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+    /* The sidebar carries the identity block and the contribution grid, so it
+       gets slightly more than half the measure. 26 weeks of cells at the
+       default 15px column pitch is 386px, which needs about 480px of card to sit
+       without scrolling at the full 64rem wrap. */
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     gap: 3.5rem;
     align-items: start;
 }
@@ -636,7 +657,67 @@ h1 {
     border-bottom-color: var(--accent);
 }
 
-@media (max-width: 860px) {
+/* The contribution grid, sitting in the About card between the facts and the
+   GitHub link.
+
+   This element is a <section>, which is the whole difficulty. Three things are
+   fighting here, all of them section scale and none of them section-specific:
+
+     section { padding: 5rem 0; border-bottom: 1px solid var(--line) }  (line 835)
+     .activity { margin-top: 3rem; padding-top: 2rem }                 (line 1435)
+
+   The blanket `section` rule is the sneaky one: it is why the block grew a 96px
+   chin under the legend and a rule below the thing it had already ruled off on
+   top. Both paddings and the bottom border have to be cancelled explicitly --
+   overriding only padding-top is what let the chin through in the first place.
+
+   Scoped through .about-side deliberately: the base .activity rule sits later
+   in the file (line ~1400, under ATMOSPHERE) with equal specificity, so a bare
+   .about-activity here would simply lose the cascade and the override would be
+   dead code. */
+.about-side .about-activity {
+    /* Same trap as .about-id: the card is a column flex with
+       align-items: flex-start, so without a cap this shrink-to-fits its content
+       and spills past the card instead of scrolling inside .grid-scroll. */
+    width: 100%;
+    max-width: 100%;
+    margin-top: 0;
+    /* The rule above the count is the block's divider, matching .about-facts.
+       The <section> default adds a matching rule under the legend, which reads
+       as the grid being boxed off from the GitHub link for no reason. */
+    border-bottom: 0;
+    padding-top: 1.1rem;
+    /* The card's own 1.5rem gap already separates the block from the GitHub
+       link below it. */
+    padding-bottom: 0;
+}
+
+/* The legend is right-aligned on the full-width strip, where the grid spans the
+   measure and the two share an edge. In the card the grid is narrower than the
+   measure, so a right-aligned legend floats ~78px past the grid's last column
+   and the block reads as two unrelated pieces. Left-aligning it puts it under
+   the grid's first column, where the whole block is one left-aligned unit. */
+.about-side .about-activity .activity-bottom {
+    justify-content: flex-start;
+}
+
+/* A phone cannot spare the height, and the card is already carrying the
+   identity block, Resume, three facts and a link. The component also removes
+   itself when the snapshot is missing, so this is belt-and-braces rather than
+   the only guard. */
+@media (max-width: 640px) {
+    .about-activity {
+        display: none;
+    }
+}
+
+/* Stack About well before the sidebar becomes too narrow to hold the grid. At
+   the old 860px breakpoint the two-column layout resumed at 861px with a card
+   inner width of ~280px, while 26 weeks of cells needs ~401px — so the grid
+   scrolled sideways across the whole 900-1150px band, which is most laptops and
+   iPad in landscape. Stacking to 1180px keeps the card full width there, and
+   above it the two-column sidebar is comfortably wider than the grid. */
+@media (max-width: 1180px) {
     .about-grid {
         grid-template-columns: minmax(0, 1fr);
         gap: 2.25rem;
@@ -1279,6 +1360,140 @@ main > section > .wrap {
     color: var(--muted);
     font-size: 0.92rem;
     max-width: 30rem;
+}
+
+/* ACTIVITY — GitHub contribution grid. Rendered by js/github-activity.js from an
+   activity.json snapshot, which the deploy workflow generates on every run so
+   the published copy is never older than a day. The month axis is positioned and
+   its offsets are computed from the same 15px column pitch as the grid, so the
+   two are only ever as accurate as that number staying in sync. */
+.activity {
+    --cell: 11px;
+    --cell-gap: 4px;
+    --cell-radius: 2px;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--line);
+}
+
+.activity-total {
+    display: flex;
+    align-items: baseline;
+    gap: 0.55rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.activity-total strong {
+    display: inline-flex;
+    color: var(--ink);
+    font: 1.65rem/1 var(--font-mono);
+    letter-spacing: -0.06em;
+    font-variant-numeric: tabular-nums;
+}
+
+/* One digit is a fixed-height window onto a strip that slides through it. The
+   per-digit transition-delay is set inline by the script, so the number rolls up
+   right to left. */
+.count-digit {
+    display: inline-block;
+    height: 1em;
+    overflow: hidden;
+}
+
+.count-reel {
+    display: flex;
+    flex-direction: column;
+    transform: translateY(-10em);
+    transition: transform 1s cubic-bezier(0.45, 0, 0.2, 1);
+}
+
+.count-reel span {
+    height: 1em;
+    line-height: 1em;
+}
+
+/* Cell size is a variable so a narrower slot can shrink the cells rather than
+   scaling the whole grid, which would blur the text around it. It is declared on
+   .activity rather than .activity-grid so the legend squares shrink with the
+   cells — they are the same .day element, and a legend of 11px swatches under a
+   4px grid is a legend that lies about the scale. The JS derives its column
+   pitch from the computed grid-auto-columns and row-gap, so the month axis stays
+   aligned at any size without a second number to keep in sync. */
+.grid-scroll {
+    overflow-x: auto;
+    padding: 0.85rem 0 0.3rem;
+}
+
+.activity-grid {
+    display: grid;
+    grid-template-rows: repeat(7, var(--cell));
+    grid-auto-flow: column;
+    grid-auto-columns: var(--cell);
+    gap: var(--cell-gap);
+    width: max-content;
+}
+
+.day {
+    width: var(--cell);
+    height: var(--cell);
+    border-radius: var(--cell-radius);
+    background: var(--line);
+}
+
+.day[data-level="1"] {
+    background: color-mix(in srgb, var(--accent) 24%, var(--bg));
+}
+
+.day[data-level="2"] {
+    background: color-mix(in srgb, var(--accent) 46%, var(--bg));
+}
+
+.day[data-level="3"] {
+    background: color-mix(in srgb, var(--accent) 70%, var(--bg));
+}
+
+.day[data-level="4"] {
+    background: var(--accent);
+}
+
+.months {
+    position: relative;
+    height: 1em;
+    margin-top: 0.45rem;
+    color: var(--muted);
+    font: 0.65rem var(--font-mono);
+}
+
+.months span {
+    position: absolute;
+    top: 0;
+    white-space: nowrap;
+}
+
+.activity-bottom {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.75rem;
+}
+
+.legend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--muted);
+    font-size: 0.68rem;
+}
+
+.legend span:first-child {
+    margin-right: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .count-reel {
+        transition: none;
+    }
 }
 
 /* SKILLS */

@@ -4,13 +4,17 @@
   var KEY = 'theme-v2';
   var html = document.documentElement;
 
-  // Apply the stored theme immediately. This script is a blocking <script> in
-  // <head>, so data-theme is set before first paint — no flash of light.
+  // Apply the stored theme immediately. Dark is the default, so only a saved
+  // 'light' choice opts out. This script is a blocking <script> in <head>, so
+  // data-theme is set before first paint — no flash of the wrong theme.
   try {
-    if (localStorage.getItem(KEY) === 'dark') {
+    if (localStorage.getItem(KEY) !== 'light') {
       html.setAttribute('data-theme', 'dark');
     }
-  } catch (e) {}
+  } catch (e) {
+    // Storage can be unavailable (e.g. blocked cookies); keep the dark default.
+    html.setAttribute('data-theme', 'dark');
+  }
 
   function isDark() {
     return html.getAttribute('data-theme') === 'dark';
